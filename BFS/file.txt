@@ -1,0 +1,1 @@
+[nord,nord,est,est,est,sud,sud,sud,sud,sud,sud,sud,sud,est,est,nord,nord,nord,est,est]
