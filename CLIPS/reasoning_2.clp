@@ -1,7 +1,7 @@
 
 (defmodule MAIN (export ?ALL))
 
-;;
+
 
 (deftemplate question
     (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
@@ -23,6 +23,12 @@
     (question (attribute trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
     (question (attribute trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
     (question (attribute trip-type)(importance 0) (the-question "Quale tipologia di viaggio vuoi fare? [Montagna, Mare]") (valid-answers  montagna mare) (skippable FALSE))
+    ;;
+    (question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
+    (question (type range)(attribute food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(attribute religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(attribute culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+
 
 )
 
@@ -188,5 +194,11 @@
         (assert(attribute(name trip-more-location)(value ?a)(certainty 1.0))) 
     )
 
-
+;;--------------FOOD
+    (defrule food
+        (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+    =>
+        (bind ?cf (/ ?a 10))
+        (assert (attribute (name food)(value food)(certainty ?cf)))
+    )
 
