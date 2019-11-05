@@ -1,7 +1,7 @@
 
 (defmodule MAIN (export ?ALL))
 
-
+;;
 
 (deftemplate question
     (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
