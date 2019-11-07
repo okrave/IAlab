@@ -80,6 +80,7 @@
 (deftemplate RULES::attribute
    (slot name)
    (slot value)
+   (slot type)
    (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0)))
 
 
@@ -184,7 +185,7 @@
         (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         
-        (assert (attribute (name turismo-enogastronomico)(value enogastronomico)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value enogastronomico)(certainty ?a)))
     )
 
 ;;--------------RELIGION
@@ -192,21 +193,37 @@
         (preference (type religion)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         
-        (assert (attribute (name turismo-religioso)(value religioso)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value religioso)(certainty ?a)))
     )
 ;;--------------CULTURE
     (defrule RULES::culture
         (preference (type culture)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
        
-        (assert (attribute (name turismo-culturale)(value culturale)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value culturale)(certainty ?a)))
     )
 ;;---------------------
 
-    (defrule trova-location
-        (attribute (name ?n)(value ?t)(certainty ?a ))
-        (location-tourism (location-name ?l)(tourism-type ?t)(score ?cf))
-        (test (eq ?a ?cf))
-    =>
-        (printout t " la migliore localita' per un turismo " ?t " secondo i gusti dell'utente e' " ?l crlf)
+    ;;(defrule trova-location
+      ;;  (attribute (name ?n)(value ?t)(certainty ?a ))
+      ;;  (location-tourism (location-name ?l)(tourism-type ?t)(score ?cf))
+      ;;  (test (eq ?a ?cf))
+    ;;=>
+      ;;  (printout t " la migliore localita' per un turismo " ?t " secondo i gusti dell'utente e' " ?l crlf)
+    ;;)
+
+    (defrule rate-location-type
+        (attribute (name tourism-type)(value ?v)(certainty ?a))
+        (location-tourism(location-name ?l)(tourism-type ?v)(score ?cf))
+        =>
+        (assert(attribute(name rate-tourism-type)(type ?v)(value ?l)(certainty (* ?a ?cf))))  
+    )
+
+    (defrule rate-location-type
+        (attribute(name rate-tourism-type)(type ?t1)(value ?l)(certainty ?f1))
+        (attribute(name rate-tourism-type)(type ?t2&:(neq ?t2 ?t1))(value ?l)(certainty ?f2))
+        (attribute(name rate-tourism-type)(type ?t3&:(neq ?t3 ?t2))(value ?l)(certainty ?f3)) 
+      
+        =>
+        (assert(attribute(name rate-location-tourism-type)(value ?l)(certainty (+ ?f1 (+ ?f2 ?f3)) )))
     )

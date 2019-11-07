@@ -32,20 +32,20 @@
                 (bind ?answer (explode$ (readline)))
                 (if (and (eq ?skip TRUE) (eq (length$ ?answer) 0)) then 
                     (bind ?answer nil) (bind ?empty TRUE) (break))
-                (bind ?answer (nth 1 ?answer))
+                (bind ?answer (nth$ 1 ?answer))
                 (if (lexemep ?answer) then 
                     (bind ?answer (lowcase ?answer)))
             )
         )
         (case range then
-            (bind ?min (nth 1 ?allowed-values))
-            (bind ?max (nth 2 ?allowed-values)) 
+            (bind ?min (nth$ 1 ?allowed-values))
+            (bind ?max (nth$ 2 ?allowed-values)) 
             (while (or (not (integerp ?answer)) (< ?answer ?min) (> ?answer ?max)) do
                 (printout t ?question)
                 (bind ?answer (explode$ (readline)))
                 (if (and (eq ?skip TRUE) (eq (length$ ?answer) 0)) then 
                     (bind ?answer nil) (bind ?empty TRUE) (break))
-                (bind ?answer (nth 1 ?answer))
+                (bind ?answer (nth$ 1 ?answer))
             )
         )
         (case open then
@@ -57,7 +57,7 @@
                     (bind ?answer nil) (bind ?empty TRUE)
                 )
                 (if (> (length$ ?answer) 0) then
-                    (bind ?done TRUE) (bind ?answer (nth 1 (create$ ?answer))) 
+                    (bind ?done TRUE) (bind ?answer (nth$ 1 (create$ ?answer))) 
                 )       
             )
         )
@@ -93,7 +93,7 @@
 =>
     (bind ?q "Are you happy with one of the suggested trips? [yes, no] ")
     (bind ?va (create$ yes no))
-    (bind ?answer (nth 1 (ask-question closed FALSE ?q ?va)))
+    (bind ?answer (nth$ 1 (ask-question closed FALSE ?q ?va)))
     (if (eq ?answer yes) then 
         (printout t "Thank you for using our expert system. Have a good vacation!" crlf crlf)
         (halt)
@@ -113,8 +113,8 @@
                     (valid-answers $?va))
 =>
     (bind ?answer-pair (ask-question ?t ?s ?q ?va))
-    (bind ?answer (nth 1 ?answer-pair))
-    (bind ?empty (nth 2 ?answer-pair))
+    (bind ?answer (nth$ 1 ?answer-pair))
+    (bind ?empty (nth$ 2 ?answer-pair))
     ;;(printout t " answer value: " ?answer "--" crlf)   
     (if (not ?empty) then 
         ;;(printout t "asserted" crlf)   
@@ -649,7 +649,7 @@
 (defrule BUILD-AND-RATE-TRIP::fill-trip-hotels-and-costs
     (declare (salience 200))
     ?t <- (trip (resorts $?rl ?r $?rr) (hotels $?hs) (days $?ds) (costs $?cs))
-    (test (eq (nth (member$ ?r (create$ ?rl ?r ?rr)) ?cs) 0))
+    (test (eq (nth$ (member$ ?r (create$ ?rl ?r ?rr)) ?cs) 0))
     (dv (description the-hotel-in ?r) (value ?h) (CF ?hcf))
     (not (dv (description the-hotel-in ?r) (value ?h2&~?h) (CF ?hcf2&:(> ?hcf2 ?hcf))))
     (hotel (name ?h) (resort ?r) (stars ?s))
@@ -658,7 +658,7 @@
     (bind ?index (member$ ?r (create$ ?rl ?r ?rr)))
     (bind ?daily-cost (+ ?*HOTEL-BASE-COST* (* ?s ?*HOTEL-ADDITIONAL-COST*)))
     (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
-    (bind ?cost-all-days (* (nth ?index ?ds) ?cost-all-people))
+    (bind ?cost-all-days (* (nth$ ?index ?ds) ?cost-all-people))
     (modify ?t (hotels (replace$ ?hs ?index ?index ?h)) (costs (replace$ ?cs ?index ?index ?cost-all-days)))
 )
 
@@ -671,7 +671,7 @@
     (dv (description the-trip-duration) (value ?td))
 => 
     (bind ?index (member$ ?r (create$ ?rl ?r ?rr)))
-    (bind ?d (nth ?index ?ds))
+    (bind ?d (nth$ ?index ?ds))
     (bind ?tcf (/ (* ?d ?rcf) ?td))
     (assert (dv (description the-trip) (value ?id) (CF ?tcf)))
 )
@@ -679,11 +679,11 @@
 (defrule BUILD-AND-RATE-TRIP::rate-trip-by-hotels 
     (trip (trip-id ?id) (resorts $?rl ?r $?rr) (hotels $?hs) (days $?ds) (length ?len))
     (dv (description the-hotel-in ?r) (value ?h) (CF ?hcf))
-    (test (eq ?h (nth (member$ ?r (create$ ?rl ?r ?rr)) ?hs))) 
+    (test (eq ?h (nth$ (member$ ?r (create$ ?rl ?r ?rr)) ?hs))) 
     (dv (description the-trip-duration) (value ?td))
 =>  
     (bind ?index (member$ ?r (create$ ?rl ?r ?rr)))
-    (bind ?d (nth ?index ?ds))
+    (bind ?d (nth$ ?index ?ds))
     (bind ?tcf (/ (* ?d ?hcf) ?td))
     (assert (dv (description the-trip) (value ?id) (CF ?tcf)))
 )
