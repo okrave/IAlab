@@ -1,48 +1,22 @@
 
-(defmodule MAIN (export ?ALL))
+;;****************
+;;* MODULE MAIN  *
+;;****************
 
 
+(defrule MAIN::start
+  (declare (salience 10000))
+  =>
+  (set-fact-duplication TRUE)
+  (focus ASK-QUESTION RULES))
 
-(deftemplate question
-    (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
-    (slot attribute (default ?NONE))
-    (slot the-question (default ?NONE))
-    (slot type (default normal))
-    (multislot valid-answers (default ?NONE))
-    (slot skippable (default TRUE))
-    (slot already-asked (default FALSE))
-    (multislot precursors (default ?DERIVE))
-)
-
-(deffacts question-list
-    (question (type range)(attribute trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
-    (question (attribute trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (type range)(attribute trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
-    (question (attribute trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (type range)(attribute trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
-    (question (attribute trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (attribute trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
-    (question (attribute trip-type)(importance 0) (the-question "Quale tipologia di viaggio vuoi fare? [Montagna, Mare]") (valid-answers  montagna mare) (skippable FALSE))
-    ;;
-    (question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
-    (question (type range)(attribute food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(attribute religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(attribute culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+;;***********************
+;;* MODULE ASK-QUESTION *
+;;***********************
+(defmodule ASK-QUESTION (import QUESTIONS ?ALL))
 
 
-)
-
-(deftemplate MAIN::attribute
-   (slot name)
-   (slot value)
-   (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0)))
-   
-(deftemplate MAIN::preference
-    (slot type)
-    (slot answer)
-)
-
-(deffunction MAIN::ask-question (?type ?question ?allowed-values)
+(deffunction ASK-QUESTION::ask-question (?type ?question ?allowed-values)
     (bind ?answer INVALID-ANSWER)
     (switch ?type
         (case normal then
@@ -75,7 +49,7 @@
 )
 
 
-   (defrule MAIN::ask-a-question
+   (defrule ASK-QUESTION::ask-a-question
    ?f <- (question (already-asked FALSE)
                    (precursors)
                    (type ?type)
@@ -88,7 +62,7 @@
 
    )	
 
-    (defrule MAIN::precursor-is-satisfied
+    (defrule ASK-QUESTION::precursor-is-satisfied
         ?f <- (question (precursors ?t is ?v $?rest))
         (preference (type ?t) (answer ?v))
         => 
@@ -96,9 +70,20 @@
     )
 
 
+;;*****************************
+;;* MODULE QUESTION-INFERENCE *
+;;*****************************
+
+(defmodule RULES (import QUESTIONS ?ALL)(import LOCATION ?ALL))
 
 
-   (defrule MAIN::verify
+(deftemplate RULES::attribute
+   (slot name)
+   (slot value)
+   (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0)))
+
+
+   (defrule RULES::verify
         (preference (type trip-type)(answer montagna))
         =>
         (assert(attribute(name trip-type)(value montagna)(certainty 0.4)))
@@ -107,13 +92,13 @@
 
 
 
-   (defrule MAIN::trip-budget-generic
+   (defrule RULES::trip-budget-generic
         (preference (type trip-budget-generic) (answer si))
         =>
         (assert(attribute (name trip-budget-generic)(value si)(certainty 1.0)))
    )
    
-   (defrule MAIN::trip-budget-generic
+   (defrule RULES::trip-budget-generic
         (preference (type trip-budget-generic) (answer no))
         =>
         (assert(attribute (name trip-budget-generic)(value no)(certainty 1.0)))
@@ -121,7 +106,7 @@
 
    ;;-------TRIP LENGTH
 
-   (defrule MAIN::trip-length
+   (defrule RULES::trip-length
         (preference (type trip-length) (answer ?s&:(and(> ?s 1)(< ?s 30))))
         =>
         (assert(attribute(name trip-length)(value ?s)(certainty 1.0)))
@@ -131,20 +116,20 @@
 
     ;;-------TRIP BUDGET
 
-   (defrule MAIN::trip-budget-generic
+   (defrule RULES::trip-budget-generic
         (preference (type trip-budget-generic)(answer si))
         =>
         (assert(attribute(name trip-budget-generic)(value si)(certainty 1.0)))
    )
 
-    (defrule MAIN::trip-budget-generic
+    (defrule RULES::trip-budget-generic
         (preference (type trip-budget-generic)(answer no))
         =>
         (assert(attribute(name trip-budget-generic)(value no)(certainty 1.0)))
         (assert(attribute(name trip-budget)(value 5000)(certainty 1.0)))
    )
 
-   (defrule MAIN::trip-budget
+   (defrule RULES::trip-budget
         (preference (type trip-budget)(answer ?a&:(and(> ?a 200)(< ?a 5001))))
         =>
         (assert(attribute(name trip-budget)(value ?a)(certainty 1.0)))
@@ -153,13 +138,13 @@
 
    ;;------MORE REGION
 
-    (defrule MAIN::trip-more-region-generic
+    (defrule RULES::trip-more-region-generic
         (preference (type trip-more-region-generic)(answer si))
         =>
         (assert(attribute(name trip-more-region-generic)(value si)(certainty 1.0)))
     )
 
-    (defrule MAIN::trip-more-region-generic
+    (defrule RULES::trip-more-region-generic
         (preference (type trip-more-region-generic)(answer no))
         =>
         (assert(attribute(name trip-more-region-generic)(value no)(certainty 1.0)))
@@ -167,20 +152,20 @@
     )
 
 
-    (defrule MAIN::trip-more-region
+    (defrule RULES::trip-more-region
         (preference (type trip-more-region)(answer ?a&:(and(> ?a 2)(< ?a 7))))
         =>
         (assert(attribute(name trip-more-region)(value ?a)(certainty 1.0))) 
     )
 
 ;; -------MORE LOCATION
-        (defrule MAIN::trip-more-location-generic
+        (defrule RULES::trip-more-location-generic
         (preference (type trip-more-location-generic)(answer si))
         =>
         (assert(attribute(name trip-more-location-generic)(value si)(certainty 1.0)))
     )
 
-    (defrule MAIN::trip-more-location-generic
+    (defrule RULES::trip-more-location-generic
         (preference (type trip-more-location-generic)(answer no))
         =>
         (assert(attribute(name trip-more-location-generic)(value no)(certainty 1.0)))
@@ -188,17 +173,40 @@
     )
 
 
-    (defrule MAIN::trip-more-location
+    (defrule RULES::trip-more-location
         (preference (type trip-more-location)(answer ?a&:(and(> ?a 2)(< ?a 11))))
         =>
         (assert(attribute(name trip-more-location)(value ?a)(certainty 1.0))) 
     )
 
 ;;--------------FOOD
-    (defrule food
+    (defrule RULES::food
         (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
-        (bind ?cf (/ ?a 10))
-        (assert (attribute (name food)(value food)(certainty ?cf)))
+        
+        (assert (attribute (name turismo-enogastronomico)(value enogastronomico)(certainty ?a)))
     )
 
+;;--------------RELIGION
+    (defrule RULES::religion
+        (preference (type religion)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+    =>
+        
+        (assert (attribute (name turismo-religioso)(value religioso)(certainty ?a)))
+    )
+;;--------------CULTURE
+    (defrule RULES::culture
+        (preference (type culture)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+    =>
+       
+        (assert (attribute (name turismo-culturale)(value culturale)(certainty ?a)))
+    )
+;;---------------------
+
+    (defrule trova-location
+        (attribute (name ?n)(value ?t)(certainty ?a ))
+        (location-tourism (location-name ?l)(tourism-type ?t)(score ?cf))
+        (test (eq ?a ?cf))
+    =>
+        (printout t " la migliore localita' per un turismo " ?t " secondo i gusti dell'utente e' " ?l crlf)
+    )
