@@ -1,30 +1,37 @@
-;;MODULE QUESTION
-;;prova
-(defmodule MAIN (export ?ALL))
-
-
-
+;; QUESTIONS
 (defmodule QUESTIONS (export ?ALL))
+
+   
+(deftemplate QUESTIONS::preference
+    (slot type)
+    (slot answer)
+)
 
 (deftemplate QUESTIONS::question
     (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
     (slot attribute (default ?NONE))
     (slot the-question (default ?NONE))
+    (slot type (default normal))
     (multislot valid-answers (default ?NONE))
     (slot skippable (default TRUE))
     (slot already-asked (default FALSE))
     (multislot precursors (default ?DERIVE))
 )
 
-(deffacts question-list
-    (question (attribute trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
+(deffacts QUESTIONS::question-list
+    (question (type range)(attribute trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
     (question (attribute trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (attribute trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is yes))
+    (question (type range)(attribute trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
     (question (attribute trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (attribute trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is yes))
+    (question (type range)(attribute trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
     (question (attribute trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (attribute trip-more-region)(importance 0) (the-question "Quante location vorresti visitare? valore tra [2,10]") (valid-answers  2 10) (skippable FALSE)(precursors trip-more-location-generic is yes))
+    (question (attribute trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
     (question (attribute trip-type)(importance 0) (the-question "Quale tipologia di viaggio vuoi fare? [Montagna, Mare]") (valid-answers  montagna mare) (skippable FALSE))
+    ;;
+    (question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
+    (question (type range)(attribute food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(attribute religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(attribute culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
 
 )
 
@@ -32,24 +39,24 @@
 
 (defmodule LOCATION (export ?ALL))
 
-(deftemplate MAIN::location
+(deftemplate location
     (slot name (default ?NONE))
     (slot region (default ?NONE))
 )
 
-(deftemplate MAIN::loc-to-loc
+(deftemplate loc-to-loc
     (slot location-src (default ?NONE))
     (slot location-dst (default ?NONE))
     (slot distance (type FLOAT))
 )
 
-(deftemplate MAIN::location-tourism-list
+(deftemplate location-tourism
     (slot location-name (default ?NONE))
     (slot tourism-type (default ?NONE))
     (slot score(type INTEGER) (range 1 5))
 )
 
-(deftemplate MAIN::provalocation
+(deftemplate provalocation
     (slot name (default ?NONE))
     (slot region (default ?NONE))
     (slot altitude (type FLOAT))
@@ -84,32 +91,20 @@
     
 )
 
-;;(deffacts loc-to-loc-list
-    ;;(loc-to-loc (location-src palermo)(location-dst agrigento)(distance))
-    ;;(loc-to-loc (location-src palermo)(location-dst catania)(distance))
-    ;;(loc-to-loc (location-src palermo)(location-dst reggio)(distance))
-    ;;(loc-to-loc (location-src palermo)(location-dst salerno)(distance))
-    ;;(loc-to-loc (location-src agrigento)(location-dst catania)(distance))
-    ;;(loc-to-loc (location-src agrigento)(location-dst bari)(distance))
-    ;;(loc-to-loc (location-src agrigento)(location-dst salerno)(distance))
-    ;;(loc-to-loc (location-src catania)(location-dst brindisi)(distance))
-    ;;(loc-to-loc (location-src catania)(location-dst scilla)(distance))
-    ;;(loc-to-loc (location-src catania)(location-dst roma)(distance))
-    ;;(loc-to-loc (location-src reggio)(location-dst salerno)(distance))
-    ;;(loc-to-loc (location-src reggio)(location-dst scilla)(distance))
-    ;;(loc-to-loc (location-src reggio)(location-dst bari)(distance))
-    ;;(loc-to-loc (location-src reggio)(location-dst latina)(distance))
-    ;;(loc-to-loc (location-src salerno)(location-dst scilla)(distance))
-    ;;(loc-to-loc (location-src salerno)(location-dst brindisi)(distance))
-    ;;(loc-to-loc (location-src salerno)(location-dst frosinone)(distance))
-    ;;(loc-to-loc (location-src scilla)(location-dst lecce)(distance))
-    ;;(loc-to-loc (location-src scilla)(location-dst roma)(distance))
-    ;;(loc-to-loc (location-src roma)(location-dst latina)(distance))
-    ;;(loc-to-loc (location-src roma)(location-dst frosinone)(distance))
-    ;;(loc-to-loc (location-src roma)(location-dst siena)(distance))
-    ;;(loc-to-loc (location-src frosinone)(location-dst latina)(distance))
+(deffacts location-tourism-list
+    (location-tourism (location-name agrigento)(tourism-type balneare)(score 5))
+    (location-tourism (location-name agrigento)(tourism-type naturalistico)(score 3))
+    (location-tourism (location-name agrigento)(tourism-type culturale)(score 5))
+    (location-tourism (location-name agrigento)(tourism-type enogastronomico)(score 4))
+    (location-tourism (location-name palermo)(tourism-type balneare)(score 4))
+    (location-tourism (location-name palermo)(tourism-type naturalistico)(score 3))
+    (location-tourism (location-name palermo)(tourism-type culturale)(score 4))
+    (location-tourism (location-name palermo)(tourism-type religioso)(score 5))
+    (location-tourism (location-name palermo)(tourism-type enogastronomico)(score 5))
 
-;;)
+)
+
+
 
 (deffacts provalista-location
     (provalocation (name agrigento)(region sicilia) (altitude 37.31) (longitude 12.58))
