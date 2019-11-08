@@ -1,7 +1,9 @@
 ;; COMMON
 (defmodule COMMON (export ?ALL))
 
-
+(defglobal
+    ?*MAX-TOURISM-SCORE* = 5
+)
 
 (deftemplate attribute
    (slot name)
@@ -60,7 +62,7 @@
 
 (deftemplate QUESTIONS::question
     (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
-    (slot attribute (default ?NONE))
+    (slot description (default ?NONE)) ;;ho cambiato attribute in description per non confondersi con gli attribute asseriti
     (slot the-question (default ?NONE))
     (slot type (default normal))
     (multislot valid-answers (default ?NONE))
@@ -70,19 +72,22 @@
 )
 
 (deffacts QUESTIONS::question-list
-    (question (type range)(attribute trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
-    (question (attribute trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (type range)(attribute trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
-    (question (attribute trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (type range)(attribute trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
-    (question (attribute trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (attribute trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
-    (question (attribute trip-type)(importance 0) (the-question "Quale tipologia di viaggio vuoi fare? [Montagna, Mare]") (valid-answers  montagna mare) (skippable FALSE))
+    ;;(question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
+    ;;(question (description trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
+    ;;(question (type range)(description trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
+    ;;(question (description trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
+    ;;(question (type range)(description trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
+    ;;(question (description trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
+    ;;(question (description trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
     ;;
-    (question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
-    (question (type range)(attribute food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(attribute religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(attribute culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    ;;(question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
+    (question (type range)(description food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(description religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(description culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (description mountain)(importance 0)(the-question " Ti piacciono i luoghi montani? [si,no] " )(valid-answers si no)(skippable FALSE))
+    (question (type range)(description naturalistic)(importance 0)(the-question " Quanto dai importanza all'aspetto naturalistico di una localita' ? tra [1,5] ")(valid-answers 1 5))
+    (question (description balneare-lacustre)(importance 0)(the-question " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(valid-answers balneare lacustre))
+    (question (description sport)(importance 0)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
 
 )
 

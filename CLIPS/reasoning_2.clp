@@ -54,7 +54,7 @@
                    (precursors)
                    (type ?type)
                    (the-question ?the-question)
-                   (attribute ?the-attribute)
+                   (description ?the-attribute)
                    (valid-answers $?valid-answers))
    =>
    (modify ?f (already-asked TRUE))
@@ -78,13 +78,7 @@
 
 
 
-   (defrule RULES::verify
-        (preference (type trip-type)(answer montagna))
-        =>
-        (assert(attribute(name trip-type)(value montagna)(certainty 0.4)))
-        (assert(attribute(name trip-type)(value mare)(certainty -0.4)))
-   )
-
+  
 
 
    (defrule RULES::trip-budget-generic
@@ -179,7 +173,7 @@
         (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         
-        (assert (attribute (name tourism-type)(value enogastronomico)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value enogastronomico)(certainty (* 0.6 (/ ?a 5)))))
     )
 
 ;;--------------RELIGION
@@ -187,14 +181,63 @@
         (preference (type religion)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         
-        (assert (attribute (name tourism-type)(value religioso)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value religioso)(certainty (* 0.6 (/ ?a 5)))))
     )
 ;;--------------CULTURE
     (defrule RULES::culture
         (preference (type culture)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
        
-        (assert (attribute (name tourism-type)(value culturale)(certainty ?a)))
+        (assert (attribute (name tourism-type)(value culturale)(certainty (* 0.6 (/ ?a 5)))))
+    )
+
+;;--------------MOUNTAIN
+
+    (defrule RULES::montain-yes
+        (preference (type mountain)(answer si))
+    =>
+        (assert (attribute (name tourism-type)(value montano)(certainty 0.6)))
+    )
+    
+    (defrule RULES::montain-no
+        (preference (type mountain)(answer no))
+    =>
+        (assert (attribute (name tourism-type)(value montano)(certainty -1.0)))
+    )
+
+;;--------------NATURALISTIC
+    (defrule RULES::naturalistic
+        (preference (type naturalistic)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+    =>
+        (assert (attribute (name tourism-type)(value naturalistico)(certainty (* 0.6 (/ ?a 5)))))
+    )
+;;--------------BALNEARE-LACUSTRE
+    (defrule RULES::balneare-lacustre
+        (preference (type balneare-lacustre)(answer balneare))
+    =>
+        (assert (attribute (name tourism-type)(value balneare)(certainty 0.6)))
+        (assert (attribute (name tourist-type)(value lacustre)(certainty 0.4)))
+    )
+    (defrule RULES::balneare-lacustre
+        (preference (type balneare-lacustre)(answer lacustre))
+    =>
+        (assert (attribute (name tourism-type)(value balneare)(certainty 0.4)))
+        (assert (attribute (name tourist-type)(value lacustre)(certainty 0.6)))
+    )
+;;--------------SPORT-TERMALE
+    (defrule RULES::sport-termale
+        (preference (type sport)(answer relax))
+    =>
+        (assert (attribute (name tourism-type)(value sportivo) (certainty 0.2)))
+        (assert (attribute (name tourism-type)(value termale) (certainty 0.4)))
+  
+    )
+       (defrule RULES::sport-termale
+        (preference (type sport)(answer sport))
+    =>
+        (assert (attribute (name tourism-type)(value sportivo) (certainty 0.4)))
+        (assert (attribute (name tourism-type)(value termale) (certainty 0.2)))
+  
     )
 ;;---------------------
 
