@@ -1,3 +1,54 @@
+;; COMMON
+(defmodule COMMON (export ?ALL))
+
+
+
+(deftemplate attribute
+   (slot name)
+   (slot value)
+   (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0))
+)
+
+
+
+;;---------- COMBINE CERTAINTIES ------------
+  
+(defrule COMMON::combine-certainties-both-positive
+    (declare (auto-focus TRUE))
+    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1&:(>= ?C1 0.0)))
+    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2&:(>= ?C2 0.0)))
+    (test (neq ?fact1 ?fact2))
+=>
+    (retract ?fact1)
+   ;; (bind ?C3 (- (+ ?C1 ?C2) (* ?C1 ?C2)))
+   (bind ?C3 (+ ?C1 ?C2))
+    (modify ?fact2 (certainty ?C3))
+)
+    
+(defrule COMMON::combine-certainties-both-negative
+    (declare (auto-focus TRUE))
+    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1&:(<= ?C1 0.0)))
+    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2&:(<= ?C2 0.0)))
+    (test (neq ?fact1 ?fact2))
+=>
+    (retract ?fact1)
+    (bind ?C3 (+ (+ ?C1 ?C2) (* ?C1 ?C2)))
+    (modify ?fact2 (certainty ?C3))
+)
+
+(defrule COMMON::combine-certainties-negative-positive
+    (declare (auto-focus TRUE))
+    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1))
+    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2))
+    (test (neq ?fact1 ?fact2))
+    (test (< (* ?C1 ?C2) 0.0))
+=>
+    (retract ?fact1)
+    (bind ?C3 (/ (+ ?C1 ?C2) (- 1 (min (abs ?C1) (abs ?C2) ))))
+    (modify ?fact2 (certainty ?C3))
+)
+
+
 ;; QUESTIONS
 (defmodule QUESTIONS (export ?ALL))
 

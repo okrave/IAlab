@@ -74,14 +74,8 @@
 ;;* MODULE QUESTION-INFERENCE *
 ;;*****************************
 
-(defmodule RULES (import QUESTIONS ?ALL)(import LOCATION ?ALL))
+(defmodule RULES (import QUESTIONS ?ALL)(import LOCATION ?ALL)(import COMMON ?ALL))
 
-
-(deftemplate RULES::attribute
-   (slot name)
-   (slot value)
-   (slot type)
-   (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0)))
 
 
    (defrule RULES::verify
@@ -160,7 +154,7 @@
     )
 
 ;; -------MORE LOCATION
-        (defrule RULES::trip-more-location-generic
+    (defrule RULES::trip-more-location-generic
         (preference (type trip-more-location-generic)(answer si))
         =>
         (assert(attribute(name trip-more-location-generic)(value si)(certainty 1.0)))
@@ -216,14 +210,8 @@
         (attribute (name tourism-type)(value ?v)(certainty ?a))
         (location-tourism(location-name ?l)(tourism-type ?v)(score ?cf))
         =>
-        (assert(attribute(name rate-tourism-type)(type ?v)(value ?l)(certainty (* ?a ?cf))))  
+        (assert(attribute(name rate-tourism-type)(value ?l)(certainty (* ?a ?cf))))  
     )
 
-    (defrule rate-location-type
-        (attribute(name rate-tourism-type)(type ?t1)(value ?l)(certainty ?f1))
-        (attribute(name rate-tourism-type)(type ?t2&:(neq ?t2 ?t1))(value ?l)(certainty ?f2))
-        (attribute(name rate-tourism-type)(type ?t3&:(neq ?t3 ?t2))(value ?l)(certainty ?f3)) 
-      
-        =>
-        (assert(attribute(name rate-location-tourism-type)(value ?l)(certainty (+ ?f1 (+ ?f2 ?f3)) )))
-    )
+
+  
