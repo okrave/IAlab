@@ -6,7 +6,7 @@
 )
 
 (deftemplate attribute
-   (slot name)
+   (multislot name)
    (slot value)
    (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0))
 )
@@ -17,8 +17,8 @@
   
 (defrule COMMON::combine-certainties-both-positive
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1&:(>= ?C1 0.0)))
-    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2&:(>= ?C2 0.0)))
+    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1&:(>= ?C1 0.0)))
+    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2&:(>= ?C2 0.0)))
     (test (neq ?fact1 ?fact2))
 =>
     (retract ?fact1)
@@ -29,8 +29,8 @@
     
 (defrule COMMON::combine-certainties-both-negative
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1&:(<= ?C1 0.0)))
-    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2&:(<= ?C2 0.0)))
+    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1&:(<= ?C1 0.0)))
+    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2&:(<= ?C2 0.0)))
     (test (neq ?fact1 ?fact2))
 =>
     (retract ?fact1)
@@ -40,8 +40,8 @@
 
 (defrule COMMON::combine-certainties-negative-positive
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name ?n) (value ?v) (certainty ?C1))
-    ?fact2 <- (attribute (name ?n) (value ?v) (certainty ?C2))
+    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1))
+    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2))
     (test (neq ?fact1 ?fact2))
     (test (< (* ?C1 ?C2) 0.0))
 =>
@@ -87,8 +87,8 @@
     (question (description mountain)(importance 0)(the-question " Ti piacciono i luoghi montani? [si,no] " )(valid-answers si no)(skippable FALSE))
     (question (type range)(description naturalistic)(importance 0)(the-question " Quanto dai importanza all'aspetto naturalistico di una localita' ? tra [1,5] ")(valid-answers 1 5))
     (question (description balneare-lacustre)(importance 0)(the-question " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(valid-answers balneare lacustre))
-    (question (description sport)(importance 0)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
-
+    (question (description sport-termale)(importance 0)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
+    (question (description costo)(importance 0)(the-question " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(valid-answers economico normale costoso)(skippable FALSE))
 )
 
 ;;MODULE LOCATION

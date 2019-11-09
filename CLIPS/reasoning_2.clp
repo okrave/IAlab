@@ -8,7 +8,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus ASK-QUESTION RULES))
+  (focus ASK-QUESTION RULES RATE))
 
 ;;***********************
 ;;* MODULE ASK-QUESTION *
@@ -74,12 +74,7 @@
 ;;* MODULE QUESTION-INFERENCE *
 ;;*****************************
 
-(defmodule RULES (import QUESTIONS ?ALL)(import LOCATION ?ALL)(import COMMON ?ALL))
-
-
-
-  
-
+(defmodule RULES (import QUESTIONS ?ALL)(import COMMON ?ALL))
 
    (defrule RULES::trip-budget-generic
         (preference (type trip-budget-generic) (answer si))
@@ -212,32 +207,58 @@
         (assert (attribute (name tourism-type)(value naturalistico)(certainty (* 0.6 (/ ?a 5)))))
     )
 ;;--------------BALNEARE-LACUSTRE
-    (defrule RULES::balneare-lacustre
+    (defrule RULES::balneare
         (preference (type balneare-lacustre)(answer balneare))
     =>
         (assert (attribute (name tourism-type)(value balneare)(certainty 0.6)))
         (assert (attribute (name tourist-type)(value lacustre)(certainty 0.4)))
     )
-    (defrule RULES::balneare-lacustre
+    (defrule RULES::lacustre
         (preference (type balneare-lacustre)(answer lacustre))
     =>
         (assert (attribute (name tourism-type)(value balneare)(certainty 0.4)))
         (assert (attribute (name tourist-type)(value lacustre)(certainty 0.6)))
     )
 ;;--------------SPORT-TERMALE
-    (defrule RULES::sport-termale
-        (preference (type sport)(answer relax))
+    (defrule RULES::termale
+        (preference (type sport-termale)(answer relax))
     =>
         (assert (attribute (name tourism-type)(value sportivo) (certainty 0.2)))
         (assert (attribute (name tourism-type)(value termale) (certainty 0.4)))
   
     )
-       (defrule RULES::sport-termale
-        (preference (type sport)(answer sport))
+       (defrule RULES::sport
+        (preference (type sport-termale)(answer sport))
     =>
         (assert (attribute (name tourism-type)(value sportivo) (certainty 0.4)))
         (assert (attribute (name tourism-type)(value termale) (certainty 0.2)))
   
+    )
+
+;;--------------COSTO
+    (defrule RULES::costo-economico
+        (preference (type costo)(answer economico))
+    =>
+        (assert (attribute (name stelle-hotel)(value 1)(certainty 0.4)))
+        (assert (attribute (name stelle-hotel)(value 2)(certainty 0.2)))
+        (assert (attribute (name stelle-hotel)(value 3)(certainty -0.2)))
+        (assert (attribute (name stelle-hotel)(value 4)(certainty -0.4)))
+    )
+    (defrule RULES::costo-normale 
+        (preference (type costo)(answer normale))
+    =>
+        (assert (attribute (name stelle-hotel)(value 1)(certainty -0.2)))
+        (assert (attribute (name stelle-hotel)(value 2)(certainty 0.4)))
+        (assert (attribute (name stelle-hotel)(value 3)(certainty 0.4)))
+        (assert (attribute (name stelle-hotel)(value 4)(certainty -0.2)))
+    )
+      (defrule RULES::costo-costoso
+        (preference (type costo)(answer costoso))
+    =>
+        (assert (attribute (name stelle-hotel)(value 1)(certainty -0.4)))
+        (assert (attribute (name stelle-hotel)(value 2)(certainty -0.2)))
+        (assert (attribute (name stelle-hotel)(value 3)(certainty 0.2)))
+        (assert (attribute (name stelle-hotel)(value 4)(certainty 0.4)))
     )
 ;;---------------------
 
@@ -249,12 +270,25 @@
       ;;  (printout t " la migliore localita' per un turismo " ?t " secondo i gusti dell'utente e' " ?l crlf)
     ;;)
 
-    (defrule rate-location-type
+   
+
+
+;;*********************
+;;* MODULE RATE *
+;;*********************
+
+(defmodule RATE (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
+
+(defrule rate-hotel-by-stars
+    (attribute (name stelle-hotel)(value ?s)(certainty ?cf))
+    (hotel (name ?h)(location ?l)(stars ?s))
+=>
+    (assert (attribute (name the-hotel-in ?l) (value ?h)(certainty ?cf)))
+)
+
+ (defrule rate-location-type
         (attribute (name tourism-type)(value ?v)(certainty ?a))
         (location-tourism(location-name ?l)(tourism-type ?v)(score ?cf))
         =>
         (assert(attribute(name rate-tourism-type)(value ?l)(certainty (* ?a ?cf))))  
     )
-
-
-  
