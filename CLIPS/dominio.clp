@@ -3,6 +3,7 @@
 
 (defglobal
     ?*MAX-TOURISM-SCORE* = 5
+    ?*MAX-KM-DAY* = 170
 )
 
 (deftemplate attribute
@@ -72,7 +73,7 @@
 )
 
 (deffacts QUESTIONS::question-list
-    ;;(question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
+    (question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
     ;;(question (description trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
     ;;(question (type range)(description trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
     ;;(question (description trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
@@ -80,7 +81,7 @@
     ;;(question (description trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
     ;;(question (description trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
     ;;
-    ;;(question (type range)(attribute people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
+    (question (type range)(description people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
     (question (type range)(description food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
     (question (type range)(description religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
     (question (type range)(description culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
@@ -98,6 +99,8 @@
 (deftemplate location
     (slot name (default ?NONE))
     (slot region (default ?NONE))
+    (slot altitude (type FLOAT))
+    (slot longitude (type FLOAT))
 )
 
 (deftemplate loc-to-loc
@@ -112,46 +115,42 @@
     (slot score(type INTEGER) (range 1 5))
 )
 
-(deftemplate provalocation
-    (slot name (default ?NONE))
-    (slot region (default ?NONE))
-    (slot altitude (type FLOAT))
-    (slot longitude (type FLOAT))
-)
 
 (deffacts location-list
-    (location (name agrigento) (region sicilia))
-    (location (name palermo) (region sicilia))
-    (location (name catania) (region sicilia))
-    (location (name reggio) (region calabria))
-    (location (name salerno) (region calabria))
-    (location (name scilla) (region calabria))
-    (location (name bari) (region puglia))
-    (location (name lecce) (region puglia))
-    (location (name brindisi) (region puglia))
-    (location (name roma) (region lazio))
-    (location (name latina) (region lazio))
-    (location (name frosinone) (region lazio))
-    (location (name pisa) (region toscana))
-    (location (name siena) (region toscana))
-    (location (name lucca) (region toscana))
-    (location (name genova) (region liguria))    
-    (location (name savona) (region liguria))    
-    (location (name laspezia) (region liguria))    
-    (location (name milano) (region lombardia))    
-    (location (name pavia) (region lombardia))    
-    (location (name bergamo) (region lombardia))    
-    (location (name asti) (region piemonte)) 
-    (location (name torino) (region piemonte)) 
-    (location (name pinerolo) (region piemonte))   
+    (location (name agrigento) (region sicilia)(altitude 37.31) (longitude 12.58))
+    (location (name palermo) (region sicilia)(altitude 38.14) (longitude 13.31))
+    (location (name catania) (region sicilia)(altitude 37.51) (longitude 15.08))
+    (location (name reggio) (region calabria)(altitude 38.10) (longitude 15.66))
+    (location (name salerno) (region calabria)(altitude 40.41) (longitude 14.46))
+    (location (name scilla) (region calabria)(altitude 38.14) (longitude 13.31))
+    (location (name bari) (region puglia)(altitude 41.07) (longitude 16.53))
+    (location (name lecce) (region puglia)(altitude 40.21) (longitude 18.11))
+    (location (name brindisi) (region puglia)(altitude 40.39) (longitude 17.56))
+    (location (name roma) (region lazio)(altitude 41.54) (longitude 12.31))
+    (location (name latina) (region lazio)(altitude 41.28) (longitude 12.51))
+    (location (name frosinone) (region lazio)(altitude 41.38) (longitude 13.22))
+    (location (name pisa) (region toscana)(altitude 43.43) (longitude 10.24))
+    (location (name siena) (region toscana)(altitude 43.19) (longitude 11.18))
+    (location (name lucca) (region toscana)(altitude 43.51) (longitude 10.31))
+    (location (name genova) (region liguria)(altitude 44.25) (longitude 08.55))    
+    (location (name savona) (region liguria)(altitude 44.19) (longitude 08.28))    
+    (location (name laspezia) (region liguria)(altitude 44.07) (longitude 09.51))    
+    (location (name milano) (region lombardia)(altitude 45.28) (longitude 09.11))    
+    (location (name pavia) (region lombardia)(altitude 45.11) (longitude 09.11))    
+    (location (name bergamo) (region lombardia)(altitude 45.42) (longitude 09.40))    
+    (location (name asti) (region piemonte)(altitude 44.53) (longitude 08.11)) 
+    (location (name torino) (region piemonte)(altitude 45.04) (longitude 07.42)) 
+    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))   
     
 )
 
 (deffacts location-tourism-list
+    ;;AGRIGENTO
     (location-tourism (location-name agrigento)(tourism-type balneare)(score 5))
     (location-tourism (location-name agrigento)(tourism-type naturalistico)(score 3))
     (location-tourism (location-name agrigento)(tourism-type culturale)(score 5))
     (location-tourism (location-name agrigento)(tourism-type enogastronomico)(score 4))
+    ;;PALERMO
     (location-tourism (location-name palermo)(tourism-type balneare)(score 4))
     (location-tourism (location-name palermo)(tourism-type naturalistico)(score 3))
     (location-tourism (location-name palermo)(tourism-type culturale)(score 4))
@@ -161,20 +160,33 @@
 )
 
 
-
-(deffacts provalista-location
-    (provalocation (name agrigento)(region sicilia) (altitude 37.31) (longitude 12.58))
-    (provalocation (name palermo)(region sicilia) (altitude 38.14) (longitude 13.31))
-)
-
 (defrule calcolo-distance
-    (provalocation (name ?n)(region ?r)(altitude ?a)(longitude ?l))
-    (provalocation (name ?n1&:(neq ?n1 ?n))(region ?r1)(altitude ?a1)(longitude ?l1))
+    (location (name ?n)(region sicilia)(altitude ?a)(longitude ?l))
+    (location (name ?n1&:(neq ?n1 ?n))(region ?r1)(altitude ?a1)(longitude ?l1))
     =>
 
-    (assert(loc-to-loc(location-src ?n)(location-dst ?n1)(distance (sqrt(- (** ?l 2) (** ?l1 2)))))) 
-    (assert(loc-to-loc(location-src ?n1)(location-dst ?n)(distance (sqrt(- (** ?l 2) (** ?l1 2))))))
+    ;; equaizione per calcolare km dati due punti  
+    ;;R= 6372 R * arccos(sin(latA) * sin(latB) + cos(latA) * cos(latB) * cos(lonA-lonB))
+    ;;(* R (acos(+ (* (sin latA)(cos latB)) (* (*(cos latA) (cos(latB))) (cos (- lonA LonB))))))
+    ;; trasformazione decimale/radianti : 40° × π / 180°
+    (bind ?a1_rad (* ?a1 (/ (pi) 180)))
+    (bind ?a_rad (* ?a (/ (pi) 180)))
+    (bind ?l1_rad (* ?l1 (/ (pi) 180)))
+    (bind ?l_rad (* ?l (/ (pi) 180)))
+    (bind ?km_distance (* 6372.795 (acos (+ (* (sin ?a_rad)(sin ?a1_rad)) (* (* (cos ?a_rad) (cos ?a1_rad)) (cos (- ?l_rad ?l1_rad))) )) ))
+    ;;(bind ?euclidian_distance (sqrt(+ (** (- ?l ?l1) 2) (** (- ?a ?a1) 2))))
+    (assert(loc-to-loc(location-src ?n)(location-dst ?n1)(distance ?km_distance))) 
 
+)
+
+(defrule location-turism-list-random-creation
+    (location (name ?n) (region ?r))
+    =>
+    ;;(seed (round (time)))
+    (assert(location-tourism (location-name ?n)(tourism-type balneare)(score  (random 1 5))))
+    (assert(location-tourism (location-name ?n)(tourism-type naturale)(score  (random 1 5))))
+    (assert(location-tourism (location-name ?n)(tourism-type culturale)(score  (random 1 5))))
+    (assert(location-tourism (location-name ?n)(tourism-type enogastronomico)(score  (random 1 5))))
 )
 
 ;;MODULE HOTEL
@@ -193,6 +205,17 @@
     (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
     (hotel (name empedocle)(location agrigento)(stars 4)(empty 0)(capacity 400))
 )
+
+
+;;PATH  (assert (path (resorts ?r) (length 1) (total-distance 0)))
+
+(deftemplate path
+    (multislot locations)
+    (slot length (type INTEGER))
+    (slot total-distance (type FLOAT))
+    
+)
+
 ;; MODULE TRIP
 
 (defmodule TRIP (export ?ALL))

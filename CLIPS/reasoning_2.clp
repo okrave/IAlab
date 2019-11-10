@@ -1,4 +1,5 @@
 
+
 ;;****************
 ;;* MODULE MAIN  *
 ;;****************
@@ -8,7 +9,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus ASK-QUESTION RULES RATE))
+  (focus LOCATION ASK-QUESTION RULES RATE))
 
 ;;***********************
 ;;* MODULE ASK-QUESTION *
@@ -292,3 +293,27 @@
         =>
         (assert(attribute(name rate-tourism-type)(value ?l)(certainty (* ?a ?cf))))  
     )
+
+
+;; PATH
+
+(defrule build-singleton-path
+    (location (name ?r))
+    =>
+    (assert (path (locations ?r) (length 1) (total-distance 0.0)))
+)
+
+(defrule build-path
+    (path (locations $?rs ?lr) (length ?len) (total-distance ?td))
+    
+    (attribute (name trip-length) (value ?tl))
+    (test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza al giorno
+    (test (< ?len (+ ?tl 1))) ;vincolo durata viaggio
+    (loc-to-loc (location-src ?lr) (location-dst ?nr) (distance ?d)) 
+    (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
+=>
+    (if (< (+ ?td ?d) (* ?*MAX-KM-DAY* ?tl)) then
+        (assert (path (locations ?rs ?lr ?nr) (length (+ ?len 1)) (total-distance (+ ?td ?d))))
+    )
+    
+)

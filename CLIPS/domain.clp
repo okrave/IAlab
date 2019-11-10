@@ -471,3 +471,4 @@
     (multislot costs (type INTEGER) (default 0 0 0 0 0))
     (slot length (type INTEGER))
 )
+
