@@ -161,7 +161,7 @@
 
 
 (defrule calcolo-distance
-    (location (name ?n)(region sicilia)(altitude ?a)(longitude ?l))
+    (location (name ?n)(region ?r)(altitude ?a)(longitude ?l))
     (location (name ?n1&:(neq ?n1 ?n))(region ?r1)(altitude ?a1)(longitude ?l1))
     =>
 
