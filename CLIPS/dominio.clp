@@ -120,9 +120,9 @@
     (location (name agrigento) (region sicilia)(altitude 37.31) (longitude 12.58))
     (location (name palermo) (region sicilia)(altitude 38.14) (longitude 13.31))
     (location (name catania) (region sicilia)(altitude 37.51) (longitude 15.08))
+    (location (name scilla) (region calabria)(altitude 38.14) (longitude 13.31))
     (location (name reggio) (region calabria)(altitude 38.10) (longitude 15.66))
     (location (name salerno) (region calabria)(altitude 40.41) (longitude 14.46))
-    (location (name scilla) (region calabria)(altitude 38.14) (longitude 13.31))
     (location (name bari) (region puglia)(altitude 41.07) (longitude 16.53))
     (location (name lecce) (region puglia)(altitude 40.21) (longitude 18.11))
     (location (name brindisi) (region puglia)(altitude 40.39) (longitude 17.56))
@@ -140,7 +140,8 @@
     (location (name bergamo) (region lombardia)(altitude 45.42) (longitude 09.40))    
     (location (name asti) (region piemonte)(altitude 44.53) (longitude 08.11)) 
     (location (name torino) (region piemonte)(altitude 45.04) (longitude 07.42)) 
-    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))   
+    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))    
+
     
 )
 
@@ -191,7 +192,7 @@
 
 ;;MODULE HOTEL
 
-(defmodule HOTEL (export ?ALL))
+(defmodule HOTEL (export ?ALL) (import LOCATION ?ALL))
 
 (deftemplate HOTEL::hotel
     (slot name (default ?NONE))
@@ -203,13 +204,27 @@
 
 (deffacts list-hotel
     (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
+    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
+    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
+    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
     (hotel (name empedocle)(location agrigento)(stars 4)(empty 0)(capacity 400))
 )
 
+(defrule list-hotel-random-creation
+    (location (name ?n) (region ?r))
+    =>
+    (printout t "ciao")
+    (assert(hotel (name (str-cat "morandi-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
+    (assert(hotel (name (str-cat "empedocle-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
+    (assert(hotel (name (str-cat "leonardo-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
+    (assert(hotel (name (str-cat "sciascia-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
+
+)
 
 ;;PATH  (assert (path (resorts ?r) (length 1) (total-distance 0)))
 
 (deftemplate path
+    (slot path-id (default-dynamic (gensym*)))
     (multislot locations)
     (slot length (type INTEGER))
     (slot total-distance (type FLOAT))

@@ -9,7 +9,7 @@
   (declare (salience 10000))
   =>
   (set-fact-duplication TRUE)
-  (focus LOCATION ASK-QUESTION RULES RATE))
+  (focus LOCATION HOTEL ASK-QUESTION RULES RATE PATH))
 
 ;;***********************
 ;;* MODULE ASK-QUESTION *
@@ -261,6 +261,13 @@
         (assert (attribute (name stelle-hotel)(value 3)(certainty 0.2)))
         (assert (attribute (name stelle-hotel)(value 4)(certainty 0.4)))
     )
+    ;;--------------PEOPLE NUMB
+
+    (defrule people-number
+        (preference (type people-number)(answer ?a))
+    =>
+        (assert (attribute (name the-people-number)(value ?a)(certainty 1.0)))
+    )
 ;;---------------------
 
     ;;(defrule trova-location
@@ -294,8 +301,24 @@
         (assert(attribute(name rate-tourism-type)(value ?l)(certainty (* ?a ?cf))))  
     )
 
+(defrule rate-hotel-by-availability
+    (attribute (name the-people-number)(value ?p))
+    (hotel (name ?h) (location ?l) (empty ?e&:(> ?e ?p)) (capacity ?c))
+=>
+    (bind ?ncf (* 0.4 (/ ?e ?c)))
+    (assert (attribute (name the-hotel-in ?l)(value ?h)(certainty ?ncf)))
+)
 
-;; PATH
+(defrule rate-hotel-by-availability-full
+    
+    (attribute (name the-people-number) (value ?p))
+    (hotel (name ?h) (location ?l) (empty ?e&:(< ?e ?p)))
+=>
+    ;; DOMANDA PROF è giusto andare ad eliminare l'hotel in quanto non utilizzabile (perchè pieno)
+    (assert (attribute (name the-hotel-in ?l) (value ?h) (certainty -1.0)))
+)
+
+;;----------------------------- PATH
 
 (defrule build-singleton-path
     (location (name ?r))
@@ -307,13 +330,42 @@
     (path (locations $?rs ?lr) (length ?len) (total-distance ?td))
     
     (attribute (name trip-length) (value ?tl))
-    (test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza al giorno
+    (test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza totale
     (test (< ?len (+ ?tl 1))) ;vincolo durata viaggio
     (loc-to-loc (location-src ?lr) (location-dst ?nr) (distance ?d)) 
+    (test (< ?d ?*MAX-KM-DAY*)) ;;vincolo distanza giornaliera
     (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
 =>
     (if (< (+ ?td ?d) (* ?*MAX-KM-DAY* ?tl)) then
         (assert (path (locations ?rs ?lr ?nr) (length (+ ?len 1)) (total-distance (+ ?td ?d))))
-    )
-    
+    )    
 )
+
+;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un viaggio è un insieme di città in cui non è importante l'ordine
+
+(defmodule PATH (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
+
+(defrule delete-similar-path
+    ?p1 <- (path (path-id ?id1)(locations $?rs))
+    ?p2 <- (path (path-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
+    (test (subsetp ?rs ?rs1))
+    (test (subsetp ?rs1 ?rs))
+    =>
+    (retract ?p1)
+)
+
+
+
+ ;;----------------------------------TRIP
+
+;; Trip con sole le location
+
+;;(defrule build-simple-trip
+
+;;)
+
+
+
+;; prima valutare gli hotel in quanto sono indipendi rispetto le città. io posso andare a valutare gli hotel  solo in base alle stelle e numero di posti disponibili
+
+;; dopo valutare le location  che è dipendente dalla tipologia di viaggio e dall'esistenza di hotel che possa soddisfare stelle-numero posti
