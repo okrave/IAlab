@@ -360,12 +360,14 @@
 
 (defrule build-singleton-path
     (location (name ?r))
+    (attribute(name rate-tourism-type)(value ?r)(certainty ?cf))
+
     =>
-    (assert (path (locations ?r) (length 1) (total-distance 0.0)))
+    (assert (path (locations ?r) (length 1) (total-distance 0.0)(score ?cf)))
 )
 
 (defrule build-path
-    (path (locations $?rs ?lr) (length ?len) (total-distance ?td))
+    (path (locations $?rs ?lr) (length ?len) (total-distance ?td)(score ?scr))
     
     (attribute (name trip-length) (value ?tl))
     ;;(test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza totale
@@ -373,9 +375,10 @@
     (loc-to-loc (location-src ?lr) (location-dst ?nr) (distance ?d)) 
     (test (< ?d ?*MAX-KM-DAY*)) ;;vincolo distanza giornaliera
     (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
+    (attribute(name rate-tourism-type)(value ?nr)(certainty ?cf))
 =>
     (if (< (+ ?td ?d) (* ?*MAX-KM-DAY* ?tl)) then
-        (assert (path (locations ?rs ?lr ?nr) (length (+ ?len 1)) (total-distance (+ ?td ?d))))
+        (assert (path (locations ?rs ?lr ?nr) (length (+ ?len 1)) (total-distance (+ ?td ?d))(score (+ ?scr ?cf))))
     )    
 )
 
@@ -443,11 +446,11 @@
 (defrule BUILD-TRIP::build-trip
     (declare (salience 300))
     
-    (path (path-id ?id) (locations $?rs) (length ?len))
+    (path (path-id ?id) (locations $?rs) (length ?len)(score ?scr))
     (not (banned-path (path-id ?id)))
     (attribute (name trip-length) (value ?ds))
 =>
-    (assert (trip (locations ?rs) (days ?ds) (tot-dist ?len)))
+    (assert (trip (locations ?rs) (days ?ds)(tot-dist ?len)(score ?scr)))
 )
 
 (defmodule RATE-TRIP (import COMMON ?ALL) (import HOTEL ?ALL)(import TRIP ?ALL)(import LOCATION ?ALL))
@@ -472,19 +475,22 @@
 
 
 (defrule fill-trip-hotel-and-costs
-     ?t <- (trip (locations $?rl ?r $?rr) (hotels $?hs) (days $?ds) (costs $?cs))
+     ?t <- (trip (locations $?rl ?r $?rr) (hotels $?hs) (days $?ds) (costs $?cs)(score ?scr))
     (best-hotel-in-location(location-name ?r)(best-hotel ?h)(score ?hcf))
     (hotel (name ?h)(location ?r)(stars ?s))
     (attribute (name the-people-number) (value ?p))
     =>
+
     (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del trip
     (bind ?daily-cost (+ ?*HOTEL-BASE-COST* (* ?s ?*HOTEL-ADDITIONAL-COST*)))
     (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
+    (bind ?score2 (+ ?scr ?hcf))
     ;;(bind ?cost-all-days (* (nth$ ?index ?ds) ?cost-all-people))
     (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costs (replace$ ?cs ?count ?count ?cost-all-people))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
-
+    
+    
+    ;(modify ?t (score ?score2))aggiustareeeee
 )
-
 
 
 ;(defrule fill-trip-hotels-and-costs

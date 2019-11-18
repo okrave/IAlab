@@ -220,6 +220,7 @@
     (multislot locations)
     (slot length (type INTEGER))
     (slot total-distance (type FLOAT))
+    (slot score (type FLOAT)(default 0.0))
     
 )
 
@@ -233,7 +234,7 @@
     (multislot costs (type INTEGER) (default 0 0 0 0 0))
     (multislot days (type INTEGER) (range 0 ?VARIABLE))
     (slot tot-dist (type INTEGER) (range 0 ?VARIABLE))    
-    (slot valuation (type FLOAT)(default 0.0))
+    (slot score (type FLOAT)(default 0.0))
 )
 
 (deftemplate TRIP::average-location-cf
