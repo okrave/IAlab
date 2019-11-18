@@ -3,7 +3,7 @@
 
 (defglobal
     ?*MAX-TOURISM-SCORE* = 5
-    ?*MAX-KM-DAY* = 100
+    ?*MAX-KM-DAY* = 150
     ?*HOTEL-BASE-COST* = 50
     ?*HOTEL-ADDITIONAL-COST* = 25
 )
@@ -12,6 +12,14 @@
    (multislot name)
    (slot value)
    (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0))
+)
+
+(deftemplate iteration
+    (slot i (type INTEGER))
+)
+
+(deffacts iteration
+    (iteration (i 0))
 )
 
 
@@ -76,12 +84,12 @@
 
 (deffacts QUESTIONS::question-list
     (question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,30]") (valid-answers 1 30) (skippable FALSE))
-    ;;(question (description trip-budget-generic)(importance 0) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    ;;(question (type range)(description trip-budget)(importance 0) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
-    ;;(question (description trip-more-region-generic)(importance 0) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    ;;(question (type range)(description trip-more-region)(importance 0) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
-    ;;(question (description trip-more-location-generic) (importance 0) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    ;;(question (description trip-more-location)(importance 0) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
+    (question (description trip-budget-generic)(importance 1) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
+    (question (type range)(description trip-budget)(importance 1) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
+    (question (description trip-more-region-generic)(importance 1) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
+    (question (type range)(description trip-more-region)(importance 1) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
+    (question (description trip-more-location-generic) (importance 1) (the-question "Vuoi visitare più location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
+    (question (description trip-more-location)(importance 1) (the-question "Quante location vorresti visitare? [3,4,5,6,7,8,9,10]") (valid-answers  3 4 5 6 7 8 9 10) (skippable FALSE)(precursors trip-more-location-generic is si))
     ;;
     (question (type range)(description people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
     (question (type range)(description food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))

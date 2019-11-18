@@ -2,16 +2,42 @@
 ;;* MODULE MAIN  *
 ;;****************
 
+
 (defrule MAIN::start
-  (declare (salience 10000))
+  (declare (salience 1000))
   =>
   (set-fact-duplication TRUE)
-  (focus LOCATION HOTEL ASK-QUESTION RULES RATE PATH BUILD-TRIP RATE-TRIP))
+  (focus LOCATION HOTEL)
+)
+
+
+(deffacts MAIN::define-phase-sequence
+    (phase-sequence ASK-QUESTION RULES RATE PATH BUILD-TRIP RATE-TRIP END-RULE)
+)
+
+(defrule MAIN::change-phase
+    (declare (salience -1000))
+    ?list <- (phase-sequence ?next-phase $?other-phases)
+=>
+    (printout t "prossima fase: ")
+    (printout t ?next-phase )
+    ;; Runno il primo focus
+    (focus ?next-phase)
+    (retract ?list)
+    ;; una volta runnato il primo focus runno il secondo e metto il primo in coda di modo che quando finisco tutti rirunno il primo
+    (assert (phase-sequence ?other-phases ?next-phase)) 
+)
+
+;;(defrule MAIN::start
+  ;;(declare (salience 10000))
+  ;;=>
+  ;;(set-fact-duplication TRUE)
+  ;;(focus LOCATION HOTEL ASK-QUESTION RULES RATE PATH BUILD-TRIP RATE-TRIP END-RULE))
 
 ;;***********************
 ;;* MODULE ASK-QUESTION *
 ;;***********************
-(defmodule ASK-QUESTION (import QUESTIONS ?ALL))
+(defmodule ASK-QUESTION (import QUESTIONS ?ALL) (import COMMON ?ALL))
 
 (deffunction ASK-QUESTION::ask-question (?type ?question ?allowed-values)
     (bind ?answer INVALID-ANSWER)
@@ -47,7 +73,10 @@
 
 
    (defrule ASK-QUESTION::ask-a-question
-   ?f <- (question (already-asked FALSE)
+   (iteration (i ?i))
+   ?f <- (question 
+                   (importance ?i)
+                   (already-asked FALSE)
                    (precursors)
                    (type ?type)
                    (the-question ?the-question)
@@ -64,6 +93,23 @@
         (preference (type ?t) (answer ?v))
         => 
         (modify ?f  (precursors ?rest))
+    )
+    
+    ;; La prima domanda che fa se siamo in un iterazione > 0 
+    (defrule ASK-QUESTION::ask-the-end-question
+        (declare (salience 10000))
+        (iteration (i ?i))
+        (test (> ?i 0))
+        =>
+        (printout t "Entra in ask-the-end-question")
+        (bind ?q "Are you happy with one of the suggested trips? [yes, no] ")
+        (bind ?va (create$ yes no))
+        (bind ?answer (ask-question normal ?q ?va))
+        (if (eq ?answer yes) then 
+            (printout t "Thank you for using our expert system. Have a good vacation!" crlf crlf)
+            (halt)
+            ;;(reset)
+        )
     )
 
 
@@ -306,6 +352,12 @@
 
 ;;----------------------------- PATH
 
+
+;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un viaggio è un insieme di città in cui non è importante l'ordine
+
+(defmodule PATH (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
+
+
 (defrule build-singleton-path
     (location (name ?r))
     =>
@@ -316,8 +368,8 @@
     (path (locations $?rs ?lr) (length ?len) (total-distance ?td))
     
     (attribute (name trip-length) (value ?tl))
-    (test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza totale
-    (test (< ?len (+ ?tl 1))) ;vincolo durata viaggio
+    ;;(test (< ?td (* ?*MAX-KM-DAY* ?tl))) ;vincolo distanza totale
+    (test (<= (+ ?len  1) ?tl)) ;vincolo durata viaggio
     (loc-to-loc (location-src ?lr) (location-dst ?nr) (distance ?d)) 
     (test (< ?d ?*MAX-KM-DAY*)) ;;vincolo distanza giornaliera
     (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
@@ -327,17 +379,23 @@
     )    
 )
 
-;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un viaggio è un insieme di città in cui non è importante l'ordine
-
-(defmodule PATH (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
-
 (defrule delete-similar-path
+    (declare (salience 100))
     ?p1 <- (path (path-id ?id1)(locations $?rs))
     ?p2 <- (path (path-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
     (test (subsetp ?rs ?rs1))
     (test (subsetp ?rs1 ?rs))
     =>
     (retract ?p1)
+)
+
+(defrule pruning-location-number-path
+    (attribute (name trip-length) (value ?tl))
+    ?p <- (path (length ?len))
+    ;; Se la differenza tra la durata del viaggio e la durata del path è maggiore di 1
+    (test(> (- ?tl ?len) 1))
+    =>
+    (retract ?p)
 )
 
 
@@ -423,8 +481,6 @@
     (bind ?daily-cost (+ ?*HOTEL-BASE-COST* (* ?s ?*HOTEL-ADDITIONAL-COST*)))
     (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
     ;;(bind ?cost-all-days (* (nth$ ?index ?ds) ?cost-all-people))
-    (printout t ?count crlf)
-    (printout t ?h " in " ?r crlf)
     (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costs (replace$ ?cs ?count ?count ?cost-all-people))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
 
 
@@ -447,3 +503,21 @@
     ;;(modify ?t (hotels (replace$ ?hs ?count ?count ?h))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
 
 ;)
+
+(defmodule END-RULE (import COMMON ?ALL) (import TRIP ?ALL))
+
+(defrule END-RULE::on-exit
+    (declare (salience 1000))
+    ?fact <- (iteration (i ?i))
+=>
+    (retract ?fact)
+    (assert (iteration (i (+ ?i 1))))  ;;increment iteration number
+    (pop-focus)
+)
+
+(defrule END-RULE::plsstop
+    (declare (salience 400))
+    (iteration (i ?i))
+=>
+    (halt)
+) 
