@@ -210,7 +210,7 @@
     (defrule RULES::food
         (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
     =>
-        
+        ;; valore massimo 0.6  
         (assert (attribute (name tourism-type)(value enogastronomico)(certainty (* 0.6 (/ ?a 5)))))
     )
 
