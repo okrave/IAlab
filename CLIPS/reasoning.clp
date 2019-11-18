@@ -453,7 +453,6 @@
 )
 
 ;;---------- DURATIONS ------------
-
 (defrule INIT::base-duration
     (dv (description the-trip-duration) (value ?d))
     (dv (description the-trip-length) (value ?l))

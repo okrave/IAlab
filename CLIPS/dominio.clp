@@ -3,7 +3,9 @@
 
 (defglobal
     ?*MAX-TOURISM-SCORE* = 5
-    ?*MAX-KM-DAY* = 170
+    ?*MAX-KM-DAY* = 100
+    ?*HOTEL-BASE-COST* = 50
+    ?*HOTEL-ADDITIONAL-COST* = 25
 )
 
 (deftemplate attribute
@@ -145,21 +147,6 @@
     
 )
 
-(deffacts location-tourism-list
-    ;;AGRIGENTO
-    (location-tourism (location-name agrigento)(tourism-type balneare)(score 5))
-    (location-tourism (location-name agrigento)(tourism-type naturalistico)(score 3))
-    (location-tourism (location-name agrigento)(tourism-type culturale)(score 5))
-    (location-tourism (location-name agrigento)(tourism-type enogastronomico)(score 4))
-    ;;PALERMO
-    (location-tourism (location-name palermo)(tourism-type balneare)(score 4))
-    (location-tourism (location-name palermo)(tourism-type naturalistico)(score 3))
-    (location-tourism (location-name palermo)(tourism-type culturale)(score 4))
-    (location-tourism (location-name palermo)(tourism-type religioso)(score 5))
-    (location-tourism (location-name palermo)(tourism-type enogastronomico)(score 5))
-
-)
-
 
 (defrule calcolo-distance
     (location (name ?n)(region ?r)(altitude ?a)(longitude ?l))
@@ -202,18 +189,11 @@
     (slot capacity (type INTEGER) (range 1 ?VARIABLE))
 )
 
-(deffacts list-hotel
-    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
-    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
-    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
-    (hotel (name morandi)(location agrigento)(stars 3)(empty 100)(capacity 300))
-    (hotel (name empedocle)(location agrigento)(stars 4)(empty 0)(capacity 400))
-)
 
 (defrule list-hotel-random-creation
     (location (name ?n) (region ?r))
     =>
-    (printout t "ciao")
+    
     (assert(hotel (name (str-cat "morandi-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
     (assert(hotel (name (str-cat "empedocle-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
     (assert(hotel (name (str-cat "leonardo-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
@@ -237,10 +217,16 @@
 
 (deftemplate TRIP::trip
     (multislot locations)
-    (multislot hotels)
-    (slot cost (type INTEGER) (range 0 ?VARIABLE))
-    (slot days (type INTEGER) (range 0 ?VARIABLE))
+    (multislot hotels (default ND ND ND ND ND))
+    (multislot costs (type INTEGER) (default 0 0 0 0 0))
+    (multislot days (type INTEGER) (range 0 ?VARIABLE))
     (slot tot-dist (type INTEGER) (range 0 ?VARIABLE))    
 )
 
+(deftemplate TRIP::average-location-cf
+    (slot value)
+)
 
+(deftemplate TRIP::banned-path
+    (slot path-id)
+)
