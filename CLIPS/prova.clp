@@ -92,9 +92,9 @@
         (location-tourism (location-name agrigento)(tourism-type culturale)(score  4))
         (location-tourism (location-name agrigento)(tourism-type enogastronomico)(score  3))
 
-        (location-tourism (location-name palermo)(tourism-type balneare)(score  2))
-        (location-tourism (location-name palermo)(tourism-type naturale)(score  3))
-        (location-tourism (location-name palermo)(tourism-type culturale)(score  4))
+        (location-tourism (location-name palermo)(tourism-type balneare)(score  5))
+        (location-tourism (location-name palermo)(tourism-type naturale)(score  5))
+        (location-tourism (location-name palermo)(tourism-type culturale)(score  5))
         (location-tourism (location-name palermo)(tourism-type enogastronomico)(score  5))
 
 
@@ -112,7 +112,7 @@
         (attribute (name tourism-type)(value ?v)(certainty ?a))
         (location-tourism(location-name ?l)(tourism-type ?v)(score ?cf))
         =>
-        (assert(attribute(name rate-tourism-type)(value ?l)(certainty (/ (* ?a ?cf) 3))))  
+        (assert(attribute(name rate-tourism-type)(value ?l)(certainty (/ (* ?a ?cf) (* ?a 5)))))  
     )
 
 (defrule rate-hotel-by-availability
