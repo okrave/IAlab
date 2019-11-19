@@ -122,3 +122,14 @@
     (bind ?ncf (/ ?e ?c))
     (assert (attribute (name the-hotel-in ?l)(value ?h)(certainty ?ncf)))
 )
+
+
+;;----------------PROVA MODIFY
+(deftemplate persona (slot nome))
+(deffacts init (persona (nome luca)))
+
+(defrule modify-persona
+    ?p <- (persona (nome ?n))
+    =>
+    (modify ?p (nome pippo))
+)
