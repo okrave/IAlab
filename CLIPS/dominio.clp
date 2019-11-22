@@ -34,7 +34,7 @@
 =>
     (retract ?fact1)
    ;; (bind ?C3 (- (+ ?C1 ?C2) (* ?C1 ?C2)))
-   (bind ?C3 (+ ?C1 ?C2))
+    (bind ?C3 (+ ?C1 ?C2))
     (modify ?fact2 (certainty ?C3))
 )
     

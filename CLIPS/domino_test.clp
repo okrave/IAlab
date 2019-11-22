@@ -6,12 +6,17 @@
     ?*MAX-KM-DAY* = 150
     ?*HOTEL-BASE-COST* = 50
     ?*HOTEL-ADDITIONAL-COST* = 25
+    ?*MIN-PRINT-CF* = 0.20
 )
 
 (deftemplate attribute
    (multislot name)
    (slot value)
    (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0))
+)
+
+(deffacts attribute-list    
+    (attribute (name hotel-loc-preference)(value hotel)(certainty 1.0)) 
 )
 
 (deftemplate iteration
@@ -33,11 +38,14 @@
     ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2&:(>= ?C2 0.0)))
     (test (neq ?fact1 ?fact2))
 =>
-    (retract ?fact1)
+    
    ;; (bind ?C3 (- (+ ?C1 ?C2) (* ?C1 ?C2)))
     ;; mi arriveranno in c1 e c2 valori compresi tra 0 1 utilizzo l'eq: c1 +c2 / max(c1) + max(c2)
+
     (bind ?C3 (/ (+ ?C1 ?C2) 2))
+    (retract ?fact1)
     (modify ?fact2 (certainty ?C3))
+    
 )
 
 
@@ -88,22 +96,28 @@
 
 (deffacts QUESTIONS::question-list
     (question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (valid-answers 1 7) (skippable FALSE))
-    ;;(question (description trip-budget-generic)(importance 1) (the-question "Hai un budget massimo? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    ;;(question (type range)(description trip-budget)(importance 1) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors budget-limit-generic is si))
+    (question (description trip-budget-generic)(importance 1) (the-question "Hai un budget massimo? [Si, No]") (valid-answers si no) (skippable FALSE))
+    (question (type range)(description trip-budget)(importance 1) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors trip-budget-generic is si))
     ;;(question (description trip-more-region-generic)(importance 1) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
     ;;(question (type range)(description trip-more-region)(importance 1) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
-    (question (description trip-more-location-generic) (importance 1) (the-question "Vuoi visitare meno location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (type range)(description trip-number-location)(importance 1)(the-question "Quante città vuoi visitare?")(valid-answers 1 7)(skippable FALSE)(precursors trip-more-location-generic is si))
+    ;;(question (description hotel-loc-preference)(importance 1)(the-question "Credi sia più importante l'hotel o la città in cui stai? [hotel,location]")(valid-answers hotel location)(skippable FALSE))
+
+    (question (description trip-more-location-generic) (importance 2) (the-question "Vuoi visitare meno location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
+    (question (description trip-visit-region-generic) (importance 2) (the-question "Vuoi visitare qualche regione in particolare? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
+
+    (question (description trip-visit-region) (importance 2) (the-question "Quale regione vorresti visitare? ") (valid-answers sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursors trip-visit-region-generic is si))
+
+    (question (type range)(description trip-number-location)(importance 2)(the-question "Quante città vuoi visitare?")(valid-answers 1 7)(skippable FALSE)(precursors trip-more-location-generic is si))
 
     ;;
     (question (type range)(description people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
-    ;;(question (type range)(description food)(importance 0)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
-    ;;(question (type range)(description religion)(importance 0)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    ;;(question (type range)(description culture)(importance 0)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    ;;(question (description mountain)(importance 0)(the-question " Ti piacciono i luoghi montani? [si,no] " )(valid-answers si no)(skippable FALSE))
-    ;;(question (type range)(description naturalistic)(importance 0)(the-question " Quanto dai importanza all'aspetto naturalistico di una localita' ? tra [1,5] ")(valid-answers 1 5))
-    ;;(question (description balneare-lacustre)(importance 0)(the-question " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(valid-answers balneare lacustre))
-    ;;(question (description sport-termale)(importance 0)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
+    (question (type range)(description food)(importance 1)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(description religion)(importance 1)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (type range)(description culture)(importance 1)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
+    (question (description mountain)(importance 1)(the-question " Ti piacciono i luoghi montani? [si,no] " )(valid-answers si no)(skippable FALSE))
+    (question (type range)(description naturalistic)(importance 1)(the-question " Quanto dai importanza all'aspetto naturalistico di una localita' ? tra [1,5] ")(valid-answers 1 5))
+    (question (description balneare-lacustre)(importance 1)(the-question " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(valid-answers balneare lacustre))
+    (question (description sport-termale)(importance 1)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
     (question (description costo)(importance 0)(the-question " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(valid-answers economico normale costoso)(skippable FALSE))
 )
 
@@ -155,7 +169,8 @@
     (location (name bergamo) (region lombardia)(altitude 45.42) (longitude 09.40))    
     (location (name asti) (region piemonte)(altitude 44.53) (longitude 08.11)) 
     (location (name torino) (region piemonte)(altitude 45.04) (longitude 07.42)) 
-    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))    
+    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))  
+
 
     
 )
@@ -234,9 +249,12 @@
     (multislot locations)
     (multislot hotels (default ND ND ND ND ND))
     (multislot costs (type INTEGER) (default 0 0 0 0 0))
-    (multislot days (type INTEGER) (range 0 ?VARIABLE))
+    (multislot days (type INTEGER) (default 0 0 0 0 0))
+    (multislot location-score (type FLOAT)(default 0.0 0.0 0.0 0.0 0.0))
+    (multislot hotel-score (type FLOAT)(default 0.0 0.0 0.0 0.0 0.0))
+    (slot duration (type INTEGER)(default 0))
     (slot tot-dist (type INTEGER) (range 0 ?VARIABLE))    
-    (slot score (type FLOAT)(default 0.0))
+    (slot total-score (type FLOAT)(default 0.0))
 )
 
 (deftemplate TRIP::average-location-cf
