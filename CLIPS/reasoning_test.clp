@@ -2,7 +2,6 @@
 ;;* MODULE MAIN  *
 ;;****************
 
-
 (defrule MAIN::start
   (declare (salience 1000))
   =>
@@ -11,101 +10,101 @@
 )
 
 
-(deffacts MAIN::define-phase-sequence
-    (phase-sequence ASK-QUESTION RULES RATE PATH BUILD-TRIP RATE-TRIP PRINT-RESULTS END-RULE)
+(deffacts MAIN::phase-sequence
+    (phase-sequence ASK-QUESTION REGOLE VALUTAZIONE PATH COSTRUZIONE-ITINERARIO VALUTAZIONE-ITINERARIO STAMPA-RISULTATI REGOLE-FINALI)
 )
 
-(defrule MAIN::change-phase
+(defrule MAIN::alterazione-sequenza
     (declare (salience -1000))
-    ?list <- (phase-sequence ?next-phase $?other-phases)
+    ?lista <- (phase-sequence ?prossimo-modulo $?altri-moduli)
 =>
     (printout t "prossima fase: ")
-    (printout t ?next-phase )
+    (printout t ?prossimo-modulo )
     ;; Runno il primo focus
-    (focus ?next-phase)
-    (retract ?list)
+    (focus ?prossimo-modulo)
+    (retract ?lista)
     ;; una volta runnato il primo focus runno il secondo e metto il primo in coda di modo che quando finisco tutti rirunno il primo
-    (assert (phase-sequence ?other-phases ?next-phase)) 
+    (assert (phase-sequence ?altri-moduli ?prossimo-modulo)) 
 )
 
 ;;(defrule MAIN::start
   ;;(declare (salience 10000))
   ;;=>
   ;;(set-fact-duplication TRUE)
-  ;;(focus LOCATION HOTEL ASK-QUESTION RULES RATE PATH BUILD-TRIP RATE-TRIP END-RULE))
+  ;;(focus LOCATION HOTEL ASK-QUESTION REGOLE VALUTAZIONE PATH COSTRUZIONE-ITINERARIO VALUTAZIONE-ITINERARIO REGOLE-FINALI))
 
 ;;***********************
 ;;* MODULE ASK-QUESTION *
 ;;***********************
-(defmodule ASK-QUESTION (import QUESTIONS ?ALL) (import COMMON ?ALL))
+(defmodule ASK-QUESTION (import DOMANDE ?ALL) (import COMMON ?ALL))
 
-(deffunction ASK-QUESTION::ask-question (?type ?question ?allowed-values)
-    (bind ?answer INVALID-ANSWER)
-    (switch ?type
+(deffunction ASK-QUESTION::ask-question (?tipo ?domanda ?valori-consentiti)
+    (bind ?risposta INVALID-ANSWER)
+    (switch ?tipo
         (case normal then
-            (printout t ?question)
-            (bind ?answer (read))
-            (if (lexemep ?answer) then (bind ?answer (lowcase ?answer)))
-            (while (not (member$ ?answer ?allowed-values)) do
-                (printout t ?question)
-                (bind ?answer (read))
-                (if (lexemep ?answer) then (bind ?answer (lowcase ?answer))))
+            (printout t ?domanda)
+            (bind ?risposta (read))
+            (if (lexemep ?risposta) then (bind ?risposta (lowcase ?risposta)))
+            (while (not (member$ ?risposta ?valori-consentiti)) do
+                (printout t ?domanda)
+                (bind ?risposta (read))
+                (if (lexemep ?risposta) then (bind ?risposta (lowcase ?risposta))))
             
         )
 
         (case range then
-            (bind ?min (nth$ 1 ?allowed-values))
-            (bind ?max (nth$ 2 ?allowed-values)) 
-            (while (or (not (integerp ?answer)) (< ?answer ?min) (> ?answer ?max)) do
-                (printout t ?question)
-                (bind ?answer (explode$ (readline)))
-                (if (eq (length$ ?answer) 0) then 
-                    (bind ?answer nil) (bind ?empty TRUE) (break))
-                (bind ?answer (nth$ 1 ?answer))
+            (bind ?min (nth$ 1 ?valori-consentiti))
+            (bind ?max (nth$ 2 ?valori-consentiti)) 
+            (while (or (not (integerp ?risposta)) (< ?risposta ?min) (> ?risposta ?max)) do
+                (printout t ?domanda)
+                (bind ?risposta (explode$ (readline)))
+                (if (eq (length$ ?risposta) 0) then 
+                    (bind ?risposta nil) (bind ?posti-liberi TRUE) (break))
+                (bind ?risposta (nth$ 1 ?risposta))
             )
             
         )
     )
-    (return ?answer)
+    (return ?risposta)
 
    
 )
 
 
    (defrule ASK-QUESTION::ask-a-question
-   (iteration (i ?i))
-   ?f <- (question 
-                   (importance ?i)
-                   (already-asked FALSE)
-                   (precursors)
-                   (type ?type)
-                   (the-question ?the-question)
-                   (description ?the-attribute)
-                   (valid-answers $?valid-answers))
+   (iterazione (i ?i))
+   ?f <- (domanda 
+                   (importanza ?i)
+                   (chiesto FALSE)
+                   (precursori)
+                   (tipo ?tipo)
+                   (la-domanda ?la-domanda)
+                   (descrizione ?descrizione-domanda)
+                   (risposte-valide $?risposte-valide))
    =>
-   (modify ?f (already-asked TRUE))
-   (assert (preference (type ?the-attribute)(answer (ask-question ?type ?the-question ?valid-answers))))
+   (modify ?f (chiesto TRUE))
+   (assert (preferenze (tipo ?descrizione-domanda)(risposta (ask-question ?tipo ?la-domanda ?risposte-valide))))
 
    )	
 
     (defrule ASK-QUESTION::precursor-is-satisfied
-        ?f <- (question (precursors ?t is ?v $?rest))
-        (preference (type ?t) (answer ?v))
+        ?f <- (domanda (precursori ?t is ?v $?rest))
+        (preferenze (tipo ?t) (risposta ?v))
         => 
-        (modify ?f  (precursors ?rest))
+        (modify ?f  (precursori ?rest))
     )
     
     ;; La prima domanda che fa se siamo in un iterazione > 0 
     (defrule ASK-QUESTION::ask-the-end-question
         (declare (salience 10000))
-        (iteration (i ?i))
+        (iterazione (i ?i))
         (test (> ?i 0))
         =>
-        (printout t "Entra in ask-the-end-question")
-        (bind ?q "Are you happy with one of the suggested trips? [yes, no] ")
+        (printout t "Entra in ask-the-end-domanda")
+        (bind ?q "Are you happy with one of the suggested itinerarios? [yes, no] ")
         (bind ?va (create$ yes no))
-        (bind ?answer (ask-question normal ?q ?va))
-        (if (eq ?answer yes) then 
+        (bind ?risposta (ask-question normal ?q ?va))
+        (if (eq ?risposta yes) then 
             (printout t "Thank you for using our expert system. Have a good vacation!" crlf crlf)
             (halt)
             ;;(reset)
@@ -114,344 +113,337 @@
 
 
 ;;*****************************
-;;* MODULE QUESTION-INFERENCE *
+;;* MODULE domanda-INFERENCE *
 ;;*****************************
 
-(defmodule RULES (import QUESTIONS ?ALL)(import COMMON ?ALL))
+(defmodule REGOLE (import DOMANDE ?ALL)(import COMMON ?ALL))
 
-   (defrule RULES::trip-budget-generic
-        (preference (type trip-budget-generic) (answer si))
+   (defrule REGOLE::budget-viaggio-generico
+        (preferenze (tipo budget-viaggio-generico) (risposta ?r))
         =>
-        (assert(attribute (name trip-budget-generic)(value si)(certainty 1.0)))
+        (assert(attributo (nome budget-viaggio-generico)(valore ?r)(certezza 1.0)))
    )
    
-   (defrule RULES::trip-budget-generic
-        (preference (type trip-budget-generic) (answer no))
+
+   ;;-------ITINERARIO num-citta
+
+   (defrule REGOLE::durata-viaggio
+        (preferenze (tipo durata-viaggio) (risposta ?s&:(and(> ?s 1)(< ?s 7))))
         =>
-        (assert(attribute (name trip-budget-generic)(value no)(certainty 1.0)))
+        (assert(attributo(nome durata-viaggio)(valore ?s)(certezza 1.0)))
    )
 
-   ;;-------TRIP LENGTH
-
-   (defrule RULES::trip-length
-        (preference (type trip-length) (answer ?s&:(and(> ?s 1)(< ?s 7))))
-        =>
-        (assert(attribute(name trip-length)(value ?s)(certainty 1.0)))
-   )
-
-   ;;-------TRIP LOCATION
-      (defrule RULES::trip-number
-        (preference (type trip-number-location) (answer ?s&:(and(> ?s 1)(< ?s 30))))
+   ;;-------  LOCATION ITINERARIO
+      (defrule REGOLE::numero-location-itinerario
+        (preferenze (tipo numero-location) (risposta ?s&:(and(> ?s 1)(< ?s 30))))
          
         =>
         
-        (assert(attribute(name trip-number-location)(value ?s)(certainty 1.0)))
+        (assert(attributo(nome numero-location)(valore ?s)(certezza 1.0)))
 
 
    )
 
-    ;;-------- LOC-HOTEL PREFERENCE
-    (defrule RULES::hotel-loc-preference
-        (printout t "entra in trip prima")
-        (preference (type hotel-loc-preference)(answer ?s))
-        ?a <- (attribute(name hotel-loc-preference))
+    ;;-------- LOC-HOTEL preferenze
+    (defrule REGOLE::hotel-loc-preference
+        (preferenze (tipo hotel-loc-preference)(risposta ?s))
+        ?a <- (attributo(nome hotel-loc-preference))
         =>
-        (printout t "entra in trip dopo")
         (retract ?a)
-        (assert(attribute (name hotel-loc-preference)(value ?s)(certainty 1.0)))
+        (assert(attributo (nome hotel-loc-preference)(valore ?s)(certezza 1.0)))
 
         
     )
-    ;;-------TRIP BUDGET
+    ;;-------ITINERARIO BUDGET
 
-   (defrule RULES::trip-budget-generic
-        (preference (type trip-budget-generic)(answer si))
+   (defrule REGOLE::budget-viaggio-generico
+        (preferenze (tipo budget-viaggio-generico)(risposta si))
         =>
-        (assert(attribute(name trip-budget-generic)(value si)(certainty 1.0)))
+        (assert(attributo(nome budget-viaggio-generico)(valore si)(certezza 1.0)))
    )
 
-    (defrule RULES::trip-budget-generic
-        (preference (type trip-budget-generic)(answer no))
+    (defrule REGOLE::budget-viaggio-generico
+        (preferenze (tipo budget-viaggio-generico)(risposta no))
         =>
-        (assert(attribute(name trip-budget-generic)(value no)(certainty 1.0)))
-        (assert(attribute(name trip-budget)(value 5000)(certainty 1.0)))
+        (assert(attributo(nome budget-viaggio-generico)(valore no)(certezza 1.0)))
+        (assert(attributo(nome budget-viaggio)(valore 5000)(certezza 1.0)))
    )
 
-   (defrule RULES::trip-budget
-        (preference (type trip-budget)(answer ?a&:(and(> ?a 200)(< ?a 5001))))
+   (defrule REGOLE::budget-viaggio
+        (preferenze (tipo budget-viaggio)(risposta ?a&:(and(> ?a 200)(< ?a 5001))))
         =>
-        (assert(attribute(name trip-budget)(value ?a)(certainty 1.0)))
+        (assert(attributo(nome budget-viaggio)(valore ?a)(certezza 1.0)))
    )
 
 
-   ;;------MORE REGION
+   ;;------ REGIONI
 
-    (defrule RULES::trip-visit-region-generic
-        (preference (type trip-visit-region-generic)(answer ?as))
+    (defrule REGOLE::viaggio-regione-generico
+        (preferenze (tipo viaggio-regione-generico)(risposta ?as))
         =>
-        (assert(attribute(name trip-visit-region-generic)(value ?as)(certainty 1.0)))
+        (assert(attributo(nome viaggio-regione-generico)(valore ?as)(certezza 1.0)))
 
     )
 
-    (defrule RULES::trip-visit-region
-        (preference (type trip-visit-region)(answer ?as))
+    (defrule REGOLE::viaggio-regione
+        (preferenze (tipo viaggio-regione)(risposta ?as))
         =>
-        (assert(attribute(name trip-visit-region)(value ?as)(certainty 1.0)))
+        (assert(attributo(nome viaggio-regione)(valore ?as)(certezza 1.0)))
 
     )
 
-    (defrule RULES::trip-more-region-generic
+    (defrule REGOLE::viaggio-piu-regioni-generico
 
-        (preference (type trip-more-region-generic)(answer si))
+        (preferenze (tipo viaggio-piu-regioni-generico)(risposta si))
         =>
-        (assert(attribute(name trip-more-region-generic)(value si)(certainty 1.0)))
+        (assert(attributo(nome viaggio-piu-regioni-generico)(valore si)(certezza 1.0)))
     )
 
-    (defrule RULES::trip-more-region-generic
-        (preference (type trip-more-region-generic)(answer no))
+    (defrule REGOLE::viaggio-piu-regioni-generico
+        (preferenze (tipo viaggio-piu-regioni-generico)(risposta no))
         =>
-        (assert(attribute(name trip-more-region-generic)(value no)(certainty 1.0)))
-        (assert(attribute(name trip-more-region)(value 1)(certainty 1.0)))
+        (assert(attributo(nome viaggio-piu-regioni-generico)(valore no)(certezza 1.0)))
+        (assert(attributo(nome viaggio-più-regioni)(valore 1)(certezza 1.0)))
     )
 
 
-    (defrule RULES::trip-more-region
-        (preference (type trip-more-region)(answer ?a&:(and(> ?a 2)(< ?a 7))))
+    (defrule REGOLE::viaggio-più-regioni
+        (preferenze (tipo viaggio-più-regioni)(risposta ?a&:(and(> ?a 2)(< ?a 7))))
         =>
-        (assert(attribute(name trip-more-region)(value ?a)(certainty 1.0))) 
+        (assert(attributo(nome viaggio-più-regioni)(valore ?a)(certezza 1.0))) 
     )
 
 ;; -------MORE LOCATION
-    (defrule RULES::trip-more-location-generic
-        (preference (type trip-more-location-generic)(answer si))
+    (defrule REGOLE::numero-location-generico
+        (preferenze (tipo numero-location-generico)(risposta si))
         =>
-        (assert(attribute(name trip-more-location-generic)(value si)(certainty 1.0)))
+        (assert(attributo(nome numero-location-generico)(valore si)(certezza 1.0)))
     )
 
-    (defrule RULES::trip-more-location-generic
-        (preference (type trip-more-location-generic)(answer no))
+    (defrule REGOLE::numero-location-generico
+        (preferenze (tipo numero-location-generico)(risposta no))
         =>
-        (assert(attribute(name trip-more-location-generic)(value no)(certainty 1.0)))
-        (assert(attribute(name trip-more-location)(value 1)(certainty 1.0)))
+        (assert(attributo(nome numero-location-generico)(valore no)(certezza 1.0)))
+        (assert(attributo(nome itinerario-more-location)(valore 1)(certezza 1.0)))
     )
 
 
-    (defrule RULES::trip-more-location
-        (preference (type trip-more-location)(answer ?a&:(and(> ?a 2)(< ?a 11))))
+    (defrule REGOLE::itinerario-more-location
+        (preferenze (tipo itinerario-more-location)(risposta ?a&:(and(> ?a 2)(< ?a 11))))
         =>
-        (assert(attribute(name trip-more-location)(value ?a)(certainty 1.0))) 
+        (assert(attributo(nome itinerario-more-location)(valore ?a)(certezza 1.0))) 
     )
 
-;;--------------FOOD
-    (defrule RULES::food
-        (preference (type food)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+;;-------------- MANGIARE
+    (defrule REGOLE::mangiare
+        (preferenze (tipo mangiare)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         ;; valore massimo 0.6  
-        (assert (attribute (name tourism-type)(value enogastronomico)(certainty (* 0.6 (/ ?a 5)))))
+        (assert (attributo (nome tipo-turismo)(valore enogastronomico)(certezza (* 0.6 (/ ?a 5)))))
     )
 
-;;--------------RELIGION
-    (defrule RULES::religion
-        (preference (type religion)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+;;--------------RELIGIONE
+    (defrule REGOLE::religione
+        (preferenze (tipo religione)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         
-        (assert (attribute (name tourism-type)(value religioso)(certainty (* 0.6 (/ ?a 5)))))
+        (assert (attributo (nome tipo-turismo)(valore religioso)(certezza (* 0.6 (/ ?a 5)))))
     )
-;;--------------CULTURE
-    (defrule RULES::culture
-        (preference (type culture)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+;;--------------CULTURA
+    (defrule REGOLE::cultura
+        (preferenze (tipo cultura)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
        
-        (assert (attribute (name tourism-type)(value culturale)(certainty (* 0.6 (/ ?a 5)))))
+        (assert (attributo (nome tipo-turismo)(valore culturale)(certezza (* 0.6 (/ ?a 5)))))
     )
 
-;;--------------MOUNTAIN
+;;--------------MONTAGNA
 
-    (defrule RULES::montain-yes
-        (preference (type mountain)(answer si))
+    (defrule REGOLE::montagna-si
+        (preferenze (tipo montagna)(risposta si))
     =>
-        (assert (attribute (name tourism-type)(value montano)(certainty 0.6)))
+        (assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.6)))
     )
     
-    (defrule RULES::montain-no
-        (preference (type mountain)(answer no))
+    (defrule REGOLE::montagna-no
+        (preferenze (tipo montagna)(risposta no))
     =>
-        (assert (attribute (name tourism-type)(value montano)(certainty -1.0)))
+        (assert (attributo (nome tipo-turismo)(valore montano)(certezza -1.0)))
     )
 
 ;;--------------NATURALISTIC
-    (defrule RULES::naturalistic
-        (preference (type naturalistic)(answer ?a&:(and (> ?a 0)(< ?a 6))))
+    (defrule REGOLE::naturalistico
+        (preferenze (tipo naturalistico)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
-        (assert (attribute (name tourism-type)(value naturalistico)(certainty (* 0.6 (/ ?a 5)))))
+        (assert (attributo (nome tipo-turismo)(valore naturalisticoo)(certezza (* 0.6 (/ ?a 5)))))
     )
 ;;--------------BALNEARE-LACUSTRE
-    (defrule RULES::balneare
-        (preference (type balneare-lacustre)(answer balneare))
+    (defrule REGOLE::balneare
+        (preferenze (tipo balneare-lacustre)(risposta balneare))
     =>
-        (assert (attribute (name tourism-type)(value balneare)(certainty 0.6)))
-        (assert (attribute (name tourist-type)(value lacustre)(certainty 0.4)))
+        (assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.6)))
+        (assert (attributo (nome tourist-tipo)(valore lacustre)(certezza 0.4)))
     )
-    (defrule RULES::lacustre
-        (preference (type balneare-lacustre)(answer lacustre))
+    (defrule REGOLE::lacustre
+        (preferenze (tipo balneare-lacustre)(risposta lacustre))
     =>
-        (assert (attribute (name tourism-type)(value balneare)(certainty 0.4)))
-        (assert (attribute (name tourist-type)(value lacustre)(certainty 0.6)))
+        (assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.4)))
+        (assert (attributo (nome tourist-tipo)(valore lacustre)(certezza 0.6)))
     )
 ;;--------------SPORT-TERMALE
-    (defrule RULES::termale
-        (preference (type sport-termale)(answer relax))
+    (defrule REGOLE::termale
+        (preferenze (tipo sport-termale)(risposta relax))
     =>
-        (assert (attribute (name tourism-type)(value sportivo) (certainty 0.2)))
-        (assert (attribute (name tourism-type)(value termale) (certainty 0.4)))
+        (assert (attributo (nome tipo-turismo)(valore sportivo) (certezza 0.2)))
+        (assert (attributo (nome tipo-turismo)(valore termale) (certezza 0.4)))
   
     )
-       (defrule RULES::sport
-        (preference (type sport-termale)(answer sport))
+       (defrule REGOLE::sport
+        (preferenze (tipo sport-termale)(risposta sport))
     =>
-        (assert (attribute (name tourism-type)(value sportivo) (certainty 0.4)))
-        (assert (attribute (name tourism-type)(value termale) (certainty 0.2)))
+        (assert (attributo (nome tipo-turismo)(valore sportivo) (certezza 0.4)))
+        (assert (attributo (nome tipo-turismo)(valore termale) (certezza 0.2)))
   
     )
 
 ;;--------------COSTO
-    (defrule RULES::costo-economico
-        (preference (type costo)(answer economico))
+    (defrule REGOLE::costo-economico
+        (preferenze (tipo costo)(risposta economico))
     =>
-        (assert (attribute (name stelle-hotel)(value 1)(certainty 0.4)))
-        (assert (attribute (name stelle-hotel)(value 2)(certainty 0.2)))
-        (assert (attribute (name stelle-hotel)(value 3)(certainty -0.2)))
-        (assert (attribute (name stelle-hotel)(value 4)(certainty -0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 1)(certezza 0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 2)(certezza 0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 3)(certezza -0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 4)(certezza -0.4)))
     )
-    (defrule RULES::costo-normale 
-        (preference (type costo)(answer normale))
+    (defrule REGOLE::costo-normale 
+        (preferenze (tipo costo)(risposta normale))
     =>
-        (assert (attribute (name stelle-hotel)(value 1)(certainty -0.2)))
-        (assert (attribute (name stelle-hotel)(value 2)(certainty 0.4)))
-        (assert (attribute (name stelle-hotel)(value 3)(certainty 0.4)))
-        (assert (attribute (name stelle-hotel)(value 4)(certainty -0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 1)(certezza -0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 2)(certezza 0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 3)(certezza 0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 4)(certezza -0.2)))
     )
-      (defrule RULES::costo-costoso
-        (preference (type costo)(answer costoso))
+      (defrule REGOLE::costo-costoso
+        (preferenze (tipo costo)(risposta costoso))
     =>
-        (assert (attribute (name stelle-hotel)(value 1)(certainty -0.4)))
-        (assert (attribute (name stelle-hotel)(value 2)(certainty -0.2)))
-        (assert (attribute (name stelle-hotel)(value 3)(certainty 0.2)))
-        (assert (attribute (name stelle-hotel)(value 4)(certainty 0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 1)(certezza -0.4)))
+        (assert (attributo (nome stelle-hotel)(valore 2)(certezza -0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 3)(certezza 0.2)))
+        (assert (attributo (nome stelle-hotel)(valore 4)(certezza 0.4)))
     )
     ;;--------------PEOPLE NUMB
 
-    (defrule people-number
-        (preference (type people-number)(answer ?a))
+    (defrule numero-persone
+        (preferenze (tipo numero-persone)(risposta ?a))
     =>
-        (assert (attribute (name the-people-number)(value ?a)(certainty 1.0)))
+        (assert (attributo (nome numero-persone)(valore ?a)(certezza 1.0)))
     )
 
 
 
 ;;*********************
-;;* MODULE RATE *
+;;* MODULE VALUTAZIONE *
 ;;*********************
 
-(defmodule RATE (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
+(defmodule VALUTAZIONE (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
 
 
 
-;;------ RATE HOTEL
+;;------ VALUTAZIONE HOTEL
 
-(defrule rate-hotel-by-stars
-    (attribute (name stelle-hotel)(value ?s)(certainty ?cf))
-    (hotel (name ?h)(location ?l)(stars ?s))
+(defrule valutazione-hotel-per-stelle
+    (attributo (nome stelle-hotel)(valore ?s)(certezza ?cf))
+    (hotel (nome ?h)(location ?l)(stelle ?s))
 =>
-    (assert (attribute (name the-hotel-in ?l) (value ?h)(certainty (* (/ ?cf 0.4) 0.7))))
+    (assert (attributo (nome hotel-in ?l) (valore ?h)(certezza (* (/ ?cf 0.4) 0.7))))
 )
 
-(defrule rate-hotel-by-availability
-    (attribute (name the-people-number)(value ?p))
-    (hotel (name ?h) (location ?l) (empty ?e&:(> ?e ?p)) (capacity ?c))
+(defrule valutazione-hotel-per-disponibilità
+    (attributo (nome numero-persone)(valore ?p))
+    (hotel (nome ?h) (location ?l) (posti-liberi ?e&:(> ?e ?p)) (capacità ?c))
 =>
     (bind ?ncf (* 0.7 (/ ?e ?c)))
-    (assert (attribute (name the-hotel-in ?l)(value ?h)(certainty ?ncf)))
+    (assert (attributo (nome hotel-in ?l)(valore ?h)(certezza ?ncf)))
 )
 
-(defrule rate-hotel-by-availability-full
+(defrule valutazione-hotel-per-zero-disponibilità
     
-    (attribute (name the-people-number) (value ?p))
-    (hotel (name ?h) (location ?l) (empty ?e&:(< ?e ?p)))
+    (attributo (nome numero-persone) (valore ?p))
+    (hotel (nome ?h) (location ?l) (posti-liberi ?e&:(< ?e ?p)))
 =>
     ;; DOMANDA PROF è giusto andare ad eliminare l'hotel in quanto non utilizzabile (perchè pieno)
-    (assert (attribute (name the-hotel-in ?l) (value ?h) (certainty -1.0)))
+    (assert (attributo (nome hotel-in ?l) (valore ?h) (certezza -1.0)))
 )
 
 
 
-;;------ RATE LOCATION
+;;------ VALUTAZIONE LOCATION
 
- (defrule rate-location-type
-        (attribute (name tourism-type)(value ?v)(certainty ?a))
-        (location-tourism(location-name ?l)(tourism-type ?v)(score ?cf))
+ (defrule valutazione-location-per-tipo
+        (attributo (nome tipo-turismo)(valore ?v)(certezza ?a))
+        (location-turistica(nome-location ?l)(tipo-turismo ?v)(score ?cf))
         =>
-        (assert(attribute(name rate-tourism-type)(value ?l)(certainty (/ (* ?a ?cf) (* ?a 5)))))
+        (assert(attributo(nome valutazione-tipo-turismo)(valore ?l)(certezza (/ (* ?a ?cf) (* ?a 5)))))
  )
 
- (defrule rate-location-by-region
-        (attribute(name trip-visit-region)(value ?l)(certainty ?a))
-        (location (name ?na)(region ?l))
+ (defrule valutazione-location-per-regione
+        (attributo(nome viaggio-regione)(valore ?l)(certezza ?a))
+        (location (nome ?na)(regione ?l))
         =>
-        (assert(attribute(name rate-tourism-type)(value ?na)(certainty ?a)))
+        (assert(attributo(nome valutazione-tipo-turismo)(valore ?na)(certezza ?a)))
  )
 
 
 ;;----------------------------- PATH
 
 
-;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un viaggio è un insieme di città in cui non è importante l'ordine
+;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un itinerario è un insieme di città in cui non è importante l'ordine
 
 (defmodule PATH (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL)(export ?ALL))
 
-(deftemplate best-hotel-in-location
-    (slot location-name)
-    (slot best-hotel)
+(deftemplate miglior-hotel-della-location
+    (slot nome-location)
+    (slot miglior-hotel)
     (slot score(type FLOAT))
 
 )
 
 
-(defrule fill-best-hotel-in-location
-        (location (name ?r))
-        (attribute (name the-hotel-in ?r) (value ?h) (certainty ?hcf))
-        (not (attribute (name the-hotel-in ?r) (value ?h2&~?h) (certainty ?hcf2&:(> ?hcf2 ?hcf))))
-        (hotel (name ?h) (location ?r) (stars ?s))
+(defrule calcolo-miglior-hotel-della-location
+        (location (nome ?r))
+        (attributo (nome hotel-in ?r) (valore ?h) (certezza ?hcf))
+        (not (attributo (nome hotel-in ?r) (valore ?h2&~?h) (certezza ?hcf2&:(> ?hcf2 ?hcf))))
+        (hotel (nome ?h) (location ?r) (stelle ?s))
         =>
 
-        (assert(best-hotel-in-location(location-name ?r)(best-hotel ?h)(score ?hcf)))
+        (assert(miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf)))
 )
 
-(defrule build-singleton-path-simple
-    (location (name ?r))    
+(defrule costruzione-singleton-path-semplice
+    (location (nome ?r))    
     =>
-    (assert (path (locations ?r) (length 1) (total-distance 0.0)(score 0.0)))
+    (assert (path (locations ?r) (num-citta 1) (distanza-totale 0.0)(score 0.0)))
 )
 
 
-;; Ritorna tutti i path con numero location < trip-length in cui le distanze tra una citta e l'altra sia minore di max-km-day e il totale dei km sia minore di trip-length * max-km-day < del trip
-(defrule build-path-by-hotel
-    (path (locations $?rs ?lr) (length ?len) (total-distance ?td)(score ?scr))
+;; Ritorna tutti i path con numero location < durata-viaggio in cui le distanze tra una citta e l'altra sia minore di max-km-GG e il totale dei km sia minore di durata-viaggio * max-km-GG < del itinerario
+(defrule costruzione-path-per-hotel
+    (path (locations $?rs ?lr) (num-citta ?len) (distanza-totale ?td)(score ?scr))
     
-    (attribute (name trip-length) (value ?tl))
+    (attributo (nome durata-viaggio) (valore ?tl))
     (test (<= (+ ?len  1) ?tl)) ;vincolo numero giorni
-    (loc-to-loc (location-src ?lr) (location-dst ?nr) (distance ?d)) 
-    (test (< ?d ?*MAX-KM-DAY*)) ;;vincolo distanza giornaliera
+    (loc-to-loc (location-src ?lr) (location-dst ?nr) (distanza ?d)) 
+    (test (< ?d ?*MAX-KM-GG*)) ;;vincolo distanza giornaliera
     (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
     =>
-    (if (< (+ ?td ?d) (* ?*MAX-KM-DAY* ?tl)) then
-        (assert (path (locations ?rs ?lr ?nr) (length (+ ?len 1)) (total-distance (+ ?td ?d))(score ?scr)))
+    (if (< (+ ?td ?d) (* ?*MAX-KM-GG* ?tl)) then
+        (assert (path (locations ?rs ?lr ?nr) (num-citta (+ ?len 1)) (distanza-totale (+ ?td ?d))(score ?scr)))
     )    
 )
 
 
 
-(defrule delete-similar-path
+(defrule eliminazione-path-simili
     (declare (salience 100))
     ?p1 <- (path (path-id ?id1)(locations $?rs))
     ?p2 <- (path (path-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
@@ -461,10 +453,10 @@
     (retract ?p1)
 )
 
-(defrule pruning-location-number-path
-    (attribute (name trip-number-location) (value ?tl))
-    ?p <- (path (length ?len))
-    ;; Se la differenza tra la durata del viaggio e la durata del path è maggiore di 1
+(defrule pruning-numero-location-nel-path
+    (attributo (nome numero-location) (valore ?tl))
+    ?p <- (path (num-citta ?len))
+    ;; Se la differenza tra la durata del itinerario e la durata del path è maggiore di 1
     (test (neq ?len ?tl))
     =>
     (retract ?p)
@@ -473,11 +465,11 @@
 
 
 
- ;;----------------------------------TRIP
+ ;;----------------------------------ITINERARIO
 
 ;; Trip con sole le location
 
-;;(defrule build-simple-trip
+;;(defrule build-simple-itinerario
 
 ;;)
 
@@ -485,103 +477,104 @@
 
 ;; prima valutare gli hotel in quanto sono indipendi rispetto le città. io posso andare a valutare gli hotel  solo in base alle stelle e numero di posti disponibili
 
-;; dopo valutare le location  che è dipendente dalla tipologia di viaggio e dall'esistenza di hotel che possa soddisfare stelle-numero posti
+;; dopo valutare le location  che è dipendente dalla tipologia di itinerario e dall'esistenza di hotel che possa soddisfare stelle-numero posti
 
-(defmodule BUILD-TRIP (import COMMON ?ALL) (import HOTEL ?ALL) (import TRIP ?ALL))
+(defmodule COSTRUZIONE-ITINERARIO (import COMMON ?ALL) (import HOTEL ?ALL) (import ITINERARIO ?ALL))
 
-(defrule BUILD-TRIP::average-location-cf
+(defrule COSTRUZIONE-ITINERARIO::media-cf-location
     (declare (salience 500))
-    (attribute (name rate-tourism-type))
+    (attributo (nome valutazione-tipo-turismo))
 =>
     (bind ?sum 0)
     (bind ?count 0)
-    (do-for-all-facts ((?f attribute)) (eq ?f:name (create$ tourism-type))
-    (bind ?sum (+ ?sum ?f:certainty))
+    (do-for-all-facts ((?f attributo)) (eq ?f:nome (create$ tipo-turismo))
+    (bind ?sum (+ ?sum ?f:certezza))
     (bind ?count (+ ?count 1)))
     
     (printout t "media: " (/ ?sum ?count) crlf)
-    (assert (average-location-cf (value (/ ?sum ?count))))
+    (assert (media-cf-location (valore (/ ?sum ?count))))
 )
 
-(defrule BUILD-TRIP::path-pruning-strict
+
+;; un path viene bannato se le città che lo pongono sono sotto la media o non esistono hotel con cf maggiore di 0.2
+(defrule COSTRUZIONE-ITINERARIO::path-pruning-per-media
     (declare (salience 400))
-    (average-location-cf (value ?a))
+    (media-cf-location (valore ?a))
     (path (path-id ?id) (locations $?rl ?r $?rr))
-        ;; un path viene bannato se le città che lo pongono sono sotto la media o non esistono hotel con cf maggiore di 0.2
 
-    (or (attribute (name rate-tourism-type) (value ?r) (certainty ?cfr&:(< ?cfr ?a)))
-        (not (attribute (name the-hotel-in ?r) (certainty ?cfh&:(>= ?cfh 0.2)))))
+    (or (attributo (nome valutazione-tipo-turismo) (valore ?r) (certezza ?cfr&:(< ?cfr ?a)))
+        (not (attributo (nome hotel-in ?r) (certezza ?cfh&:(>= ?cfh 0.2)))))
 =>
-    (assert (banned-path (path-id ?id)))
+    (assert (path-bannati (path-id ?id)))
 )
 
 
-(defrule BUILD-TRIP::build-trip
-    (declare (salience 300))
-    
-    (path (path-id ?id) (locations $?rs) (length ?len)(score ?scr))
-    (not (banned-path (path-id ?id)))
-    (attribute (name trip-length) (value ?ds))
+(defrule COSTRUZIONE-ITINERARIO::costruzione-itinerario
+    (declare (salience 300))    
+    (path (path-id ?id) (locations $?rs) (num-citta ?len)(score ?scr))
+    (not (path-bannati (path-id ?id)))
+    (attributo (nome durata-viaggio) (valore ?ds))
 =>
-    (assert (trip (locations ?rs)(tot-dist ?len)(duration ?len)))
+    (assert (itinerario (locations ?rs)(distanza-totale ?len)(durata ?len)))
 )
 
-;; Inserisce al campo days il minimo periodo di giorni in una citta, avremo un vettore in cui ci saranno tanti 1 quanti sono le città
-(defrule fill-trip-days-basic
-    (iteration (i ?i))
+;; Inserisce al campo giorni il minimo periodo di giorni in una citta, avremo un vettore in cui ci saranno tanti 1 quanti sono le città
+(defrule inserimento-giorni-itinerario-basico
+    (iterazione (i ?i))
     (test (eq ?i 0))
-    ?t <- (trip (locations $?rl ?r $?rr)(days $?d))
+    ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d))
 
     =>
     (bind ?count (member$ ?r (create$ $?rl ?r $?rr)))
-    (modify ?t (days (replace$ ?d ?count ?count 1)))
+    (modify ?t (giorni (replace$ ?d ?count ?count 1)))
 
 )
 
 
-(defmodule RATE-TRIP (import PATH ?ALL)(import COMMON ?ALL) (import HOTEL ?ALL)(import TRIP ?ALL)(import LOCATION ?ALL))
+(defmodule VALUTAZIONE-ITINERARIO (import PATH ?ALL)(import COMMON ?ALL) (import HOTEL ?ALL)(import ITINERARIO ?ALL)(import LOCATION ?ALL))
 
 
-(defrule fill-trip-hotel-and-costs
+(defrule modifica-itinerario-per-hotel-costi
     (declare (salience 1000))
-    ?t <- (trip (locations $?rl ?r $?rr) (hotels $?hs) (days $?ds) (costs $?cs)(hotel-score $?hscore))
-    (best-hotel-in-location(location-name ?r)(best-hotel ?h)(score ?hcf))
-    (hotel (name ?h)(location ?r)(stars ?s))
-    (attribute (name the-people-number) (value ?p))    
+    ?t <- (itinerario (locations $?rl ?r $?rr) (hotels $?hs) (giorni $?ds) (costi $?cs)(hotel-score $?hscore))
+    (miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf))
+    (hotel (nome ?h)(location ?r)(stelle ?s))
+    (attributo (nome numero-persone) (valore ?p))    
     =>
-    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del trip
-    (bind ?daily-cost (+ ?*HOTEL-BASE-COST* (* ?s ?*HOTEL-ADDITIONAL-COST*)))
+    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
+    (bind ?daily-cost (+ ?*HOTEL-COSTO-BASE* (* ?s ?*HOTEL-COSTO-ADDIZIONALE*)))
     (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
    
-    ;;(bind ?cost-all-days (* (nth$ ?index ?ds) ?cost-all-people))
-    (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costs (replace$ ?cs ?count ?count ?cost-all-people))(hotel-score (replace$ ?hscore ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
+    ;;(bind ?cost-all-giorni (* (nth$ ?index ?ds) ?cost-all-people))
+    (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costi (replace$ ?cs ?count ?count ?cost-all-people))(hotel-score (replace$ ?hscore ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
 )
 
 ;;Non funziona
-;;(defrule add-trip-hotel-score
+;;(defrule add-itinerario-hotel-score
     ;;(declare (salience 10))
-    ;;(printout t "prima entra in add-trip-hotel-score")
-    ;;?t <- (trip (locations $?rl ?r $?rr) (hotels $?hs)(hotel-score $?ls))
-    ;;(best-hotel-in-location(location-name ?r)(best-hotel ?h)(score ?hcf))
+    ;;(printout t "prima entra in add-itinerario-hotel-score")
+    ;;?t <- (itinerario (locations $?rl ?r $?rr) (hotels $?hs)(hotel-score $?ls))
+    ;;(miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf))
 
     ;;=>
-    ;;(printout t "entra in add-trip-hotel-score")
-    ;;(bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del trip
+    ;;(printout t "entra in add-itinerario-hotel-score")
+    ;;(bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
     ;;(modify ?t (hotel-score (replace$ ?hs ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
 ;;)
 
 
-(defrule add-trip-location-score
+(defrule aggiunta-location-score
     (declare (salience 1000))
-    ?t <- (trip (locations $?rl ?r $?rr)(location-score $?ls))
-    (attribute (name rate-tourism-type)(value ?r)(certainty ?cf))
+    ?t <- (itinerario (locations $?rl ?r $?rr)(location-score $?ls))
+    (attributo (nome valutazione-tipo-turismo)(valore ?r)(certezza ?cf))
     =>
-    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del trip
+    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
     (modify ?t (location-score (replace$ ?ls ?count ?count ?cf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
 )
 
-
-(deffunction fill-days(?numberOfLoc ?remainDay $?tripLocScore)
+;;--- Funzione che ripartisce i giorni rimanenti (?remainDay) in base allo score della lista
+;; 
+(deffunction lista-giorni(?numberOfLoc ?remainDay $?itinerarioLocScore)
  
     (bind ?supportList (create$ 0 0 0 0 0))
     (bind ?counter 1)
@@ -592,16 +585,16 @@
     (bind ?numberDay ?remainDay)
     (loop-for-count ?numberDay
         (if (> ?remainDay 0) then
-            (bind ?maxValue (max (expand$ ?tripLocScore)))
-            (printout t "maxValue di " ?tripLocScore " è " ?maxValue crlf)
-            (bind ?index (member$ ?maxValue ?tripLocScore))
-            (bind ?ls2 ?maxValue)
+            (bind ?maxvalore (max (expand$ ?itinerarioLocScore)))
+            (printout t "maxvalore di " ?itinerarioLocScore " è " ?maxvalore crlf)
+            (bind ?index (member$ ?maxvalore ?itinerarioLocScore))
+            (bind ?ls2 ?maxvalore)
           
 
-            (bind ?supportValue (nth$ ?index ?supportList))
-            (bind ?supportList (replace$ ?supportList ?index ?index (+ ?supportValue 1)))
+            (bind ?supportvalore (nth$ ?index ?supportList))
+            (bind ?supportList (replace$ ?supportList ?index ?index (+ ?supportvalore 1)))
             (bind ?remainDay (- ?remainDay 1))
-            (bind ?tripLocScore (replace$ ?tripLocScore ?index ?index (- ?maxValue  0.2)))
+            (bind ?itinerarioLocScore (replace$ ?itinerarioLocScore ?index ?index (- ?maxvalore  0.2)))
         
         )
     
@@ -611,42 +604,42 @@
 )
 
 
-(defrule fill-trip-days-by-hotel
+(defrule modifica-giorni-itinerario-by-hotel
     (declare (salience 100))
-    ;;(attribute (name hotel-loc-preference)(value hotel)(certainty ?cf))
-    ?t <- (trip (locations $?rl ?r $?rr)(days $?d)(tot-dist ?td)(hotel-score $?hotelScore)(duration ?dur))
-    (attribute (name trip-length)(value ?len))    
+    ;;(attributo (nome hotel-loc-preference)(valore hotel)(certezza ?cf))
+    ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(hotel-score $?hotelScore)(durata ?dur))
+    (attributo (nome durata-viaggio)(valore ?len))    
     (test (< ?dur ?len))
     =>
     (bind ?rd (- ?len ?td))
     (printout t "prima della funzione :")
     (printout t $?hotelScore crlf)
-    (bind ?supportList (fill-days (length$ (create$ $?rl ?r $?rr)) ?rd ?hotelScore))
-    (modify ?t (days ?supportList)(duration ?len))
+    (bind ?supportList (lista-giorni (length$ (create$ $?rl ?r $?rr)) ?rd ?hotelScore))
+    (modify ?t (giorni ?supportList)(durata ?len))
 )
 
 ;; Funzione che ritorta true se una la somma di una lista di interi è uguale ad un intero
-(deffunction sum-list-equal-integer (?integer $?list)
+(deffunction sum-list-equal-integer (?integer $?lista)
     (bind ?result 0)
-    (foreach ?number $?list
+    (foreach ?number $?lista
         (bind ?result (+ ?result ?number))
     )
 
     (return (eq ?result ?integer))
 )
 
-;;Rule che printa i trip che hanno la somma dei giorni di un trip diversa dall'attributo trip-length 
-(defrule check-number-day
+;;Rule che printa i itinerario che hanno la somma dei giorni di un itinerario diversa dall'attributo durata-viaggio 
+(defrule check-numero-giorni
     (declare (salience 20))
-    ?t <- (trip (locations $?rl ?r $?rr)(days $?d)(tot-dist ?td)(hotel-score $?hotelScore)(duration ?dur))
+    ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(hotel-score $?hotelScore)(durata ?dur))
     =>
     (bind ?result (sum-list-equal-integer ?dur ?d))
     (if (eq ?result FALSE) then
         (printout t "---------ERRORE nella lista: ")
         (printout t (create$ $?rl ?r $?rr))
-        (printout t "  trip-length: ")
+        (printout t "  durata-viaggio: ")
         (printout t ?dur)
-        (printout t "  è diverso dalla durata del trip: ")
+        (printout t "  è diverso dalla durata del itinerario: ")
         (printout t ?d crlf)
     )
 
@@ -656,27 +649,27 @@
 
 
 ;;---- DA FARE
-;;(defrule fill-trip-days-by-location    
+;;(defrule fill-itinerario-giorni-by-location    
   ;;  (declare (salience 100))    
-    ;;(attribute (name hotel-loc-preference)(value location)(certainty ?cf))
-    ;;?t <- (trip (locations $?rl ?r $?rr)(days $?d)(tot-dist ?td)(location-score ?locationScore)(duration ?dur))
-    ;;(attribute (name trip-length)(value ?len))    
+    ;;(attributo (nome hotel-loc-preference)(valore location)(certezza ?cf))
+    ;;?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(location-score ?locationScore)(durata ?dur))
+    ;;(attributo (nome durata-viaggio)(valore ?len))    
     ;;(test (< ?dur ?len))
     ;;=>
     ;;(bind ?rd (- ?len ?td))
-    ;;(bind ?supportList (fill-days (length$ (create$ $?rl ?r $?rr)) ?rd ?locationScore))
+    ;;(bind ?supportList (lista-giorni (length$ (create$ $?rl ?r $?rr)) ?rd ?locationScore))
     ;;(printout  t "lista giorni: " ?supportList crlf)
-    ;;(modify ?t (days ?supportList)(duration ?len))
+    ;;(modify ?t (giorni ?supportList)(durata ?len))
 
 ;;)
 
 
 
-(defrule rate-trip-by-locations
+(defrule valutazione-itinerario-by-locations
     (declare (salience 10))   
-    (trip (trip-id ?id)(locations $?ll ?l $?lr)(days $?ds)(duration ?dr)(hotel-score $?hhs)(location-score $?lls)(tot-dist ?nl&:(> ?nl 1)))
-    (attribute (name rate-tourism-type)(value ?l)(certainty ?lcf))
-    (attribute (name trip-length)(value ?td))
+    (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(giorni $?ds)(durata ?dr)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
+    (attributo (nome valutazione-tipo-turismo)(valore ?l)(certezza ?lcf))
+    (attributo (nome durata-viaggio)(valore ?td))
 =>
     (bind ?locLen (length$ (create$ $?ll ?l $?lr)))
     (bind ?count (member$ ?l (create$ ?ll ?l ?lr)))
@@ -685,16 +678,16 @@
     ;;(bind ?ncf (/ (sum-integer-list ?lls) ?nl))
     (bind ?ncf ?lcf)
     ;;(printout t (create$ $?ll ?l $?lr) " con hotel score: " $?hhs " e location-score: " $?lls " la valutazione è: " (+ ?ncf (* ?locLen 0.05)) crlf)
-    (assert (attribute (name the-trip)(value ?id)(certainty (+ ?ncf (* ?nl 0.017)))  ))
+    (assert (attributo (nome il-viaggio)(valore ?id)(certezza (+ ?ncf (* ?nl 0.017)))  ))
 
 )
 
-(defrule rate-trip-by-hotels
+(defrule valutazione-itinerario-by-hotels
     (declare (salience 10))   
-    (trip (trip-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(days $?ds)(duration ?dr)(total-score ?ts)(hotel-score $?hhs)(location-score $?lls)(tot-dist ?nl&:(> ?nl 1)))
-    (attribute (name the-hotel-in ?l)(value ?h)(certainty ?hcf)) ;; valutare se conviene usare l'attributo best-hotel-in
+    (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
+    (attributo (nome hotel-in ?l)(valore ?h)(certezza ?hcf)) ;; valutare se conviene usare l'attributo miglior-hotel-in
     (test (eq ?h (nth$ (member$ ?l (create$ ?ll ?l ?lr)) ?hs)))
-    (attribute (name trip-length)(value ?td))
+    (attributo (nome durata-viaggio)(valore ?td))
 =>
     (bind ?locLen (length$ (create$ $?ll ?l $?lr)))
     (bind ?count (member$ ?l (create$ ?ll ?l ?lr)))
@@ -703,104 +696,104 @@
     (bind ?ncf ?hcf)
     ;;(printout t (create$ $?ll ?l $?lr) " con hotel score: " $?hhs " e location-score: " $?lls " la valutazione è: " (+ ?ncf (* ?locLen 0.05)) crlf)
 
-    (assert (attribute (name the-trip) (value ?id) (certainty (+ ?ncf (* ?nl 0.015)))))
+    (assert (attributo (nome il-viaggio) (valore ?id) (certezza (+ ?ncf (* ?nl 0.015)))))
 )
 
-(defrule rate-trip-by-region
+(defrule valutazione-itinerario-by-singola-regione
     (declare (salience 10))
-    (trip (trip-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(days $?ds)(duration ?dr)(total-score ?ts)(hotel-score $?hhs)(location-score $?lls)(tot-dist ?nl&:(> ?nl 1)))
-    (attribute (name trip-visit-region)(value ?r))
-    (location (name ?l)(region ?r))
+    (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
+    (attributo (nome viaggio-regione)(valore ?r))
+    (location (nome ?l)(regione ?r))
     =>
-    (assert (attribute (name the-trip) (value ?id) (certainty 0.90)))    
+    (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))    
 
 )
 
-(deffunction sum-integer-list ($?list)
+(deffunction sum-integer-list ($?lista)
     (bind ?result 0)
-    (foreach ?number $?list
+    (foreach ?number $?lista
         (bind ?result (+ ?result ?number))
     )
 
     return ?result
 )
 
-(defrule rate-trip-by-budget
+(defrule valutazione-itinerario-by-budget
     (declare (salience 10))
-    (attribute (name trip-budget)(value ?r))
-    (trip (trip-id ?id)(tot-dist ?nl&:(> ?nl 1))(costs $?costs))
+    (attributo (nome budget-viaggio)(valore ?r))
+    (itinerario (itinerario-id ?id)(distanza-totale ?nl&:(> ?nl 1))(costi $?costi))
     
 
     =>
-    (bind ?tc (sum-integer-list ?costs) ) 
+    (bind ?tc (sum-integer-list ?costi) ) 
 
     (if (< ?tc ?r) then
-        (assert (attribute (name the-trip) (value ?id) (certainty 0.95)))
+        (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.95)))
     )
 )
 
 
 
 ;;---- DA FARE
-;;(defrule fill-trip-days-by-location    
+;;(defrule fill-itinerario-giorni-by-location    
 
 
 ;;)
 
 
 
-(defmodule PRINT-RESULTS (import COMMON ?ALL) (import TRIP ?ALL))
+(defmodule STAMPA-RISULTATI (import COMMON ?ALL) (import ITINERARIO ?ALL))
 
 (defrule results-header
    (declare (salience 500))
-   (iteration (i ?i))
+   (iterazione (i ?i))
 =>
    (printout t  crlf crlf)
-   (printout t " >>>>>>>>>>>>>>>   SELECTED TRIPS (ITERATION " (+ ?i 1) ")  <<<<<<<<<<<<<<<"  crlf)
+   (printout t " >>>>>>>>>>>>>>>   SELECTED ITINERARIOS (ITERAzione " (+ ?i 1) ")  <<<<<<<<<<<<<<<"  crlf)
    (printout t  crlf)
-   (assert (printed-trips 0))
+   (assert (printed-itinerarios 0))
 )
 
-(defrule print-and-remove-best-trip
-    ?fact1 <- (printed-trips ?p)
+(defrule print-and-remove-best-itinerario
+    ?fact1 <- (printed-itinerarios ?p)
     (test (< ?p 5))
-    ?fact2 <- (attribute (name the-trip)(value ?tid)(certainty ?tcf))
-    (not (attribute (name the-trip)(value ?tid2&~?tid)(certainty ?tcf2&:(> ?tcf2 ?tcf))))
+    ?fact2 <- (attributo (nome il-viaggio)(valore ?tid)(certezza ?tcf))
+    (not (attributo (nome il-viaggio)(valore ?tid2&~?tid)(certezza ?tcf2&:(> ?tcf2 ?tcf))))
     (test (> ?tcf ?*MIN-PRINT-CF*))
-    (trip (trip-id ?tid)(locations $?lc)(hotels $?hs)(days $?ds)(costs $?cs)(duration ?dr))
+    (itinerario (itinerario-id ?tid)(locations $?lc)(hotels $?hs)(giorni $?ds)(costi $?cs)(durata ?dr))
  
 =>
     (retract ?fact1)
-    (assert (printed-trips (+ ?p 1)))
+    (assert (printed-itinerarios (+ ?p 1)))
     (retract ?fact2)
     (bind ?total-cost (+ (expand$ ?cs) 0))
     (printout t  crlf)
-    (printout t " Trip suggestion " (+ ?p 1) " with certainty: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
+    (printout t " Trip suggestion " (+ ?p 1) " with certezza: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
     (printout t "  - Resorts to visit: " ?lc crlf)
     (printout t "  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
-    (printout t "  - Days partitioning: " ?ds crlf)
-    (printout t "  - Daily costs: " (subseq$ ?cs 1 ?dr ) "  |  Total cost: " ?total-cost crlf) 
+    (printout t "  - giorni partitioning: " ?ds crlf)
+    (printout t "  - Daily costi: " (subseq$ ?cs 1 ?dr ) "  |  Total cost: " ?total-cost crlf) 
     (printout t  crlf)
     (printout t "      _____________________________________________________" crlf)
     (printout t  crlf)
 
 )
 
-(defmodule END-RULE (import COMMON ?ALL) (import TRIP ?ALL))
+(defmodule REGOLE-FINALI (import COMMON ?ALL) (import ITINERARIO ?ALL))
 
-(defrule END-RULE::on-exit
+(defrule REGOLE-FINALI::on-exit
     (declare (salience 1000))
-    ?fact <- (iteration (i ?i))
+    ?fact <- (iterazione (i ?i))
 =>
     (retract ?fact)
-    (assert (iteration (i (+ ?i 1))))  ;;increment iteration number
+    (assert (iterazione (i (+ ?i 1))))  ;;increment iterazione number
 
     (pop-focus)
 )
 
-(defrule END-RULE::plsstop
+(defrule REGOLE-FINALI::plsstop
     (declare (salience 400))
-    (iteration (i ?i))
+    (iterazione (i ?i))
 =>
     (halt)
 ) 

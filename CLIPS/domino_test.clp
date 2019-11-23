@@ -1,30 +1,32 @@
-;; COMMON
+;;--------------------------------------------------------------- COMMON
+
 (defmodule COMMON (export ?ALL))
 
 (defglobal
     ?*MAX-TOURISM-SCORE* = 5
-    ?*MAX-KM-DAY* = 150
-    ?*HOTEL-BASE-COST* = 50
-    ?*HOTEL-ADDITIONAL-COST* = 25
+    ?*MAX-KM-GG* = 150
+    ?*HOTEL-COSTO-BASE* = 50
+    ?*HOTEL-COSTO-ADDIZIONALE* = 25    
     ?*MIN-PRINT-CF* = 0.20
 )
 
-(deftemplate attribute
-   (multislot name)
-   (slot value)
-   (slot certainty (type FLOAT) (range -1.0 1.0) (default 0.0))
+(deftemplate attributo
+    (multislot nome)
+    (slot valore)
+    (slot certezza (type FLOAT) (range -1.0 1.0) (default 0.0))
+
 )
 
-(deffacts attribute-list    
-    (attribute (name hotel-loc-preference)(value hotel)(certainty 1.0)) 
+(deffacts preference-hote-location-iniziale   
+    (attributo (nome hotel-loc-preference)(valore hotel)(certezza 1.0)) 
 )
 
-(deftemplate iteration
+(deftemplate iterazione
     (slot i (type INTEGER))
 )
 
-(deffacts iteration
-    (iteration (i 0))
+(deffacts iterazione
+    (iterazione (i 0))
 )
 
 
@@ -32,10 +34,10 @@
 ;;---------- COMBINE CERTAINTIES ------------
   
 
-(defrule combine-certainties-both-positive
+(defrule  gestione-certezze-positive
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1&:(>= ?C1 0.0)))
-    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2&:(>= ?C2 0.0)))
+    ?fact1 <- (attributo (nome $?n) (valore ?v) (certezza ?C1&:(>= ?C1 0.0)))
+    ?fact2 <- (attributo (nome $?n) (valore ?v) (certezza ?C2&:(>= ?C2 0.0)))
     (test (neq ?fact1 ?fact2))
 =>
     
@@ -44,81 +46,81 @@
 
     (bind ?C3 (/ (+ ?C1 ?C2) 2))
     (retract ?fact1)
-    (modify ?fact2 (certainty ?C3))
+    (modify ?fact2 (certezza ?C3))
     
 )
 
 
-(defrule combine-certainties-both-negative
+(defrule gestione-certezze-negative
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1&:(<= ?C1 0.0)))
-    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2&:(<= ?C2 0.0)))
+    ?fact1 <- (attributo (nome $?n) (valore ?v) (certezza ?C1&:(<= ?C1 0.0)))
+    ?fact2 <- (attributo (nome $?n) (valore ?v) (certezza ?C2&:(<= ?C2 0.0)))
     (test (neq ?fact1 ?fact2))
 =>
     (retract ?fact1)
     (bind ?C3 (/(+ ?C1 ?C2) 2))
-    (modify ?fact2 (certainty ?C3))
+    (modify ?fact2 (certezza ?C3))
 )
 
-(defrule combine-certainties-negative-positive
+(defrule gestione-certezze-positive-negative
     (declare (auto-focus TRUE))
-    ?fact1 <- (attribute (name $?n) (value ?v) (certainty ?C1))
-    ?fact2 <- (attribute (name $?n) (value ?v) (certainty ?C2))
+    ?fact1 <- (attributo (nome $?n) (valore ?v) (certezza ?C1))
+    ?fact2 <- (attributo (nome $?n) (valore ?v) (certezza ?C2))
     (test (neq ?fact1 ?fact2))
     ;; Se è vero c1<c2
     (test (< (- ?C1 ?C2) 0.0))
 =>
     (retract ?fact1)
     (bind ?C3 (/ (+ ?C2 ?C1) 2))
-    (modify ?fact2 (certainty ?C3))
+    (modify ?fact2 (certezza ?C3))
 )
 
 
-;; QUESTIONS
-(defmodule QUESTIONS (export ?ALL))
+;; DOMANDE
+(defmodule DOMANDE (export ?ALL))
 
    
-(deftemplate QUESTIONS::preference
-    (slot type)
-    (slot answer)
+(deftemplate DOMANDE::preferenze
+    (slot tipo)
+    (slot risposta)
 )
 
-(deftemplate QUESTIONS::question
-    (slot importance (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
-    (slot description (default ?NONE)) ;;ho cambiato attribute in description per non confondersi con gli attribute asseriti
-    (slot the-question (default ?NONE))
-    (slot type (default normal))
-    (multislot valid-answers (default ?NONE))
+(deftemplate DOMANDE::domanda
+    (slot importanza (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
+    (slot descrizione (default ?NONE)) ;;ho cambiato attributo in descrizione per non confondersi con gli attributo asseriti
+    (slot la-domanda (default ?NONE))
+    (slot tipo (default normal))
+    (multislot risposte-valide (default ?NONE))
     (slot skippable (default TRUE))
-    (slot already-asked (default FALSE))
-    (multislot precursors (default ?DERIVE))
+    (slot chiesto (default FALSE))
+    (multislot precursori (default ?DERIVE))
 )
 
-(deffacts QUESTIONS::question-list
-    (question (type range)(description trip-length)(importance 0) (the-question "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (valid-answers 1 7) (skippable FALSE))
-    (question (description trip-budget-generic)(importance 1) (the-question "Hai un budget massimo? [Si, No]") (valid-answers si no) (skippable FALSE))
-    (question (type range)(description trip-budget)(importance 1) (the-question "Qual'è il tuo budget? valore tra [200,5000]") (valid-answers 200 5000) (skippable FALSE)(precursors trip-budget-generic is si))
-    ;;(question (description trip-more-region-generic)(importance 1) (the-question "Vuoi visitare più regioni? [Si, No]") (valid-answers Si No si no) (skippable FALSE))
-    ;;(question (type range)(description trip-more-region)(importance 1) (the-question "Quante regioni vorresti visitare? valore tra [2,6]") (valid-answers  2 6) (skippable FALSE)(precursors trip-more-region-generic is si))
-    ;;(question (description hotel-loc-preference)(importance 1)(the-question "Credi sia più importante l'hotel o la città in cui stai? [hotel,location]")(valid-answers hotel location)(skippable FALSE))
+(deffacts DOMANDE::lista-domande
+    (domanda (tipo range)(descrizione durata-viaggio)(importanza 0) (la-domanda "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (risposte-valide 1 7) (skippable FALSE))
+    (domanda (descrizione budget-viaggio-generico)(importanza 1) (la-domanda "Hai un budget massimo? [Si, No]") (risposte-valide si no) (skippable FALSE))
+    (domanda (tipo range)(descrizione budget-viaggio)(importanza 1) (la-domanda "Qual'è il tuo budget? valore tra [200,5000]") (risposte-valide 200 5000) (skippable FALSE)(precursori budget-viaggio-generico is si))
+    (domanda (descrizione viaggio-piu-regioni-generico)(importanza 1) (la-domanda "Vuoi visitare più regioni? [Si, No]") (risposte-valide Si No si no) (skippable FALSE))
+    ;;(domanda (tipo range)(descrizione viaggio-più-regioni)(importanza 1) (la-domanda "Quante regionei vorresti visitare? valore tra [2,6]") (risposte-valide  2 6) (skippable FALSE)(precursori viaggio-più-regioni-generic is si))
+    ;;(domanda (descrizione hotel-loc-preference)(importanza 1)(la-domanda "Credi sia più importante l'hotel o la città in cui stai? [hotel,location]")(risposte-valide hotel location)(skippable FALSE))
 
-    (question (description trip-more-location-generic) (importance 2) (the-question "Vuoi visitare meno location? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
-    (question (description trip-visit-region-generic) (importance 2) (the-question "Vuoi visitare qualche regione in particolare? [Si,No]") (valid-answers Si No si no) (skippable FALSE))
+    (domanda (descrizione numero-location-generico) (importanza 2) (la-domanda "Vuoi visitare meno location? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
+    (domanda (descrizione viaggio-regione-generico) (importanza 2) (la-domanda "Vuoi visitare qualche regionee in particolare? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
 
-    (question (description trip-visit-region) (importance 2) (the-question "Quale regione vorresti visitare? ") (valid-answers sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursors trip-visit-region-generic is si))
+    (domanda (descrizione viaggio-regione) (importanza 2) (la-domanda "Quale regionee vorresti visitare? ") (risposte-valide sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursori viaggio-regione-generico is si))
 
-    (question (type range)(description trip-number-location)(importance 2)(the-question "Quante città vuoi visitare?")(valid-answers 1 7)(skippable FALSE)(precursors trip-more-location-generic is si))
+    (domanda (tipo range)(descrizione numero-location)(importanza 2)(la-domanda "Quante città vuoi visitare?")(risposte-valide 1 7)(skippable FALSE)(precursori numero-location-generico is si))
 
     ;;
-    (question (type range)(description people-number)(importance 0)(the-question "Quante persone vogliono andare in vacanza? tra [2,10] ")(valid-answers 2 10)(skippable FALSE))
-    (question (type range)(description food)(importance 1)(the-question "Quanto è importante per te il buon cibo? tra [1,5] ")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(description religion)(importance 1)(the-question "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    (question (type range)(description culture)(importance 1)(the-question "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(valid-answers 1 5)(skippable FALSE))
-    (question (description mountain)(importance 1)(the-question " Ti piacciono i luoghi montani? [si,no] " )(valid-answers si no)(skippable FALSE))
-    (question (type range)(description naturalistic)(importance 1)(the-question " Quanto dai importanza all'aspetto naturalistico di una localita' ? tra [1,5] ")(valid-answers 1 5))
-    (question (description balneare-lacustre)(importance 1)(the-question " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(valid-answers balneare lacustre))
-    (question (description sport-termale)(importance 1)(the-question " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(valid-answers relax sport))
-    (question (description costo)(importance 0)(the-question " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(valid-answers economico normale costoso)(skippable FALSE))
+    (domanda (tipo range)(descrizione numero-persone)(importanza 0)(la-domanda "Quante persone vogliono andare in vacanza? tra [2,10] ")(risposte-valide 2 10)(skippable FALSE))
+    (domanda (tipo range)(descrizione mangiare)(importanza 1)(la-domanda "Quanto è importante per te il buon cibo? tra [1,5] ")(risposte-valide 1 5)(skippable FALSE))
+    (domanda (tipo range)(descrizione religione)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
+    (domanda (tipo range)(descrizione cultura)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
+    (domanda (descrizione montagna)(importanza 1)(la-domanda " Ti piacciono i luoghi montani? [si,no] " )(risposte-valide si no)(skippable FALSE))
+    (domanda (tipo range)(descrizione naturalistico)(importanza 1)(la-domanda " Quanto dai importanza all'aspetto naturalisticoo di una localita' ? tra [1,5] ")(risposte-valide 1 5))
+    (domanda (descrizione balneare-lacustre)(importanza 1)(la-domanda " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(risposte-valide balneare lacustre))
+    (domanda (descrizione sport-termale)(importanza 1)(la-domanda " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(risposte-valide relax sport))
+    (domanda (descrizione costo)(importanza 0)(la-domanda " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(risposte-valide economico normale costoso)(skippable FALSE))
 )
 
 ;;MODULE LOCATION
@@ -126,59 +128,59 @@
 (defmodule LOCATION (export ?ALL))
 
 (deftemplate location
-    (slot name (default ?NONE))
-    (slot region (default ?NONE))
-    (slot altitude (type FLOAT))
-    (slot longitude (type FLOAT))
+    (slot nome (default ?NONE))
+    (slot regione (default ?NONE))
+    (slot altitudine (type FLOAT))
+    (slot longitudine (type FLOAT))
 )
 
 (deftemplate loc-to-loc
     (slot location-src (default ?NONE))
     (slot location-dst (default ?NONE))
-    (slot distance (type FLOAT))
+    (slot distanza (type FLOAT))
 )
 
-(deftemplate location-tourism
-    (slot location-name (default ?NONE))
-    (slot tourism-type (default ?NONE))
+(deftemplate location-turistica
+    (slot nome-location (default ?NONE))
+    (slot tipo-turismo (default ?NONE))
     (slot score(type INTEGER) (range 1 5))
 )
 
 
 (deffacts location-list
-    (location (name agrigento) (region sicilia)(altitude 37.31) (longitude 12.58))
-    (location (name palermo) (region sicilia)(altitude 38.14) (longitude 13.31))
-    (location (name catania) (region sicilia)(altitude 37.51) (longitude 15.08))
-    (location (name scilla) (region calabria)(altitude 38.14) (longitude 13.31))
-    (location (name reggio) (region calabria)(altitude 38.10) (longitude 15.66))
-    (location (name salerno) (region calabria)(altitude 40.41) (longitude 14.46))
-    (location (name bari) (region puglia)(altitude 41.07) (longitude 16.53))
-    (location (name lecce) (region puglia)(altitude 40.21) (longitude 18.11))
-    (location (name brindisi) (region puglia)(altitude 40.39) (longitude 17.56))
-    (location (name roma) (region lazio)(altitude 41.54) (longitude 12.31))
-    (location (name latina) (region lazio)(altitude 41.28) (longitude 12.51))
-    (location (name frosinone) (region lazio)(altitude 41.38) (longitude 13.22))
-    (location (name pisa) (region toscana)(altitude 43.43) (longitude 10.24))
-    (location (name siena) (region toscana)(altitude 43.19) (longitude 11.18))
-    (location (name lucca) (region toscana)(altitude 43.51) (longitude 10.31))
-    (location (name genova) (region liguria)(altitude 44.25) (longitude 08.55))    
-    (location (name savona) (region liguria)(altitude 44.19) (longitude 08.28))    
-    (location (name laspezia) (region liguria)(altitude 44.07) (longitude 09.51))    
-    (location (name milano) (region lombardia)(altitude 45.28) (longitude 09.11))    
-    (location (name pavia) (region lombardia)(altitude 45.11) (longitude 09.11))    
-    (location (name bergamo) (region lombardia)(altitude 45.42) (longitude 09.40))    
-    (location (name asti) (region piemonte)(altitude 44.53) (longitude 08.11)) 
-    (location (name torino) (region piemonte)(altitude 45.04) (longitude 07.42)) 
-    (location (name pinerolo) (region piemonte)(altitude 45.10) (longitude 08.00))  
+    (location (nome agrigento) (regione sicilia)(altitudine 37.31) (longitudine 12.58))
+    (location (nome palermo) (regione sicilia)(altitudine 38.14) (longitudine 13.31))
+    (location (nome catania) (regione sicilia)(altitudine 37.51) (longitudine 15.08))
+    (location (nome scilla) (regione calabria)(altitudine 38.14) (longitudine 13.31))
+    (location (nome reggio) (regione calabria)(altitudine 38.10) (longitudine 15.66))
+    (location (nome salerno) (regione calabria)(altitudine 40.41) (longitudine 14.46))
+    (location (nome bari) (regione puglia)(altitudine 41.07) (longitudine 16.53))
+    (location (nome lecce) (regione puglia)(altitudine 40.21) (longitudine 18.11))
+    (location (nome brindisi) (regione puglia)(altitudine 40.39) (longitudine 17.56))
+    (location (nome roma) (regione lazio)(altitudine 41.54) (longitudine 12.31))
+    (location (nome latina) (regione lazio)(altitudine 41.28) (longitudine 12.51))
+    (location (nome frosinone) (regione lazio)(altitudine 41.38) (longitudine 13.22))
+    (location (nome pisa) (regione toscana)(altitudine 43.43) (longitudine 10.24))
+    (location (nome siena) (regione toscana)(altitudine 43.19) (longitudine 11.18))
+    (location (nome lucca) (regione toscana)(altitudine 43.51) (longitudine 10.31))
+    (location (nome genova) (regione liguria)(altitudine 44.25) (longitudine 08.55))    
+    (location (nome savona) (regione liguria)(altitudine 44.19) (longitudine 08.28))    
+    (location (nome laspezia) (regione liguria)(altitudine 44.07) (longitudine 09.51))    
+    (location (nome milano) (regione lombardia)(altitudine 45.28) (longitudine 09.11))    
+    (location (nome pavia) (regione lombardia)(altitudine 45.11) (longitudine 09.11))    
+    (location (nome bergamo) (regione lombardia)(altitudine 45.42) (longitudine 09.40))    
+    (location (nome asti) (regione piemonte)(altitudine 44.53) (longitudine 08.11)) 
+    (location (nome torino) (regione piemonte)(altitudine 45.04) (longitudine 07.42)) 
+    (location (nome pinerolo) (regione piemonte)(altitudine 45.10) (longitudine 08.00))  
 
 
     
 )
 
 
-(defrule calcolo-distance
-    (location (name ?n)(region ?r)(altitude ?a)(longitude ?l))
-    (location (name ?n1&:(neq ?n1 ?n))(region ?r1)(altitude ?a1)(longitude ?l1))
+(defrule calcolo-distanza
+    (location (nome ?n)(regione ?r)(altitudine ?a)(longitudine ?l))
+    (location (nome ?n1&:(neq ?n1 ?n))(regione ?r1)(altitudine ?a1)(longitudine ?l1))
     =>
 
     ;; equaizione per calcolare km dati due punti  
@@ -189,20 +191,20 @@
     (bind ?a_rad (* ?a (/ (pi) 180)))
     (bind ?l1_rad (* ?l1 (/ (pi) 180)))
     (bind ?l_rad (* ?l (/ (pi) 180)))
-    (bind ?km_distance (* 6372.795 (acos (+ (* (sin ?a_rad)(sin ?a1_rad)) (* (* (cos ?a_rad) (cos ?a1_rad)) (cos (- ?l_rad ?l1_rad))) )) ))
-    ;;(bind ?euclidian_distance (sqrt(+ (** (- ?l ?l1) 2) (** (- ?a ?a1) 2))))
-    (assert(loc-to-loc(location-src ?n)(location-dst ?n1)(distance ?km_distance))) 
+    (bind ?km_distanza (* 6372.795 (acos (+ (* (sin ?a_rad)(sin ?a1_rad)) (* (* (cos ?a_rad) (cos ?a1_rad)) (cos (- ?l_rad ?l1_rad))) )) ))
+    ;;(bind ?euclidian_distanza (sqrt(+ (** (- ?l ?l1) 2) (** (- ?a ?a1) 2))))
+    (assert(loc-to-loc(location-src ?n)(location-dst ?n1)(distanza ?km_distanza))) 
 
 )
 
 (defrule location-turism-list-random-creation
-    (location (name ?n) (region ?r))
+    (location (nome ?n) (regione ?r))
     =>
     ;;(seed (round (time)))
-    (assert(location-tourism (location-name ?n)(tourism-type balneare)(score  (random 1 5))))
-    (assert(location-tourism (location-name ?n)(tourism-type naturale)(score  (random 1 5))))
-    (assert(location-tourism (location-name ?n)(tourism-type culturale)(score  (random 1 5))))
-    (assert(location-tourism (location-name ?n)(tourism-type enogastronomico)(score  (random 1 5))))
+    (assert(location-turistica (nome-location ?n)(tipo-turismo balneare)(score  (random 1 5))))
+    (assert(location-turistica (nome-location ?n)(tipo-turismo naturale)(score  (random 1 5))))
+    (assert(location-turistica (nome-location ?n)(tipo-turismo culturale)(score  (random 1 5))))
+    (assert(location-turistica (nome-location ?n)(tipo-turismo enogastronomico)(score  (random 1 5))))
 )
 
 ;;MODULE HOTEL
@@ -210,57 +212,58 @@
 (defmodule HOTEL (export ?ALL) (import LOCATION ?ALL))
 
 (deftemplate HOTEL::hotel
-    (slot name (default ?NONE))
+    (slot nome (default ?NONE))
     (slot location (default ?NONE))
-    (slot stars (type INTEGER) (range 1 4))
-    (slot empty (type INTEGER) (range 0 ?VARIABLE))
-    (slot capacity (type INTEGER) (range 1 ?VARIABLE))
+    (slot stelle (type INTEGER) (range 1 4))
+    (slot posti-liberi (type INTEGER) (range 0 ?VARIABLE))
+    (slot capacità (type INTEGER) (range 1 ?VARIABLE))
 )
 
 
-(defrule list-hotel-random-creation
-    (location (name ?n) (region ?r))
+(defrule lista-hotel-creazione-randomn
+    (location (nome ?n) (regione ?r))
     =>
     
-    (assert(hotel (name (str-cat "morandi-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
-    (assert(hotel (name (str-cat "empedocle-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
-    (assert(hotel (name (str-cat "leonardo-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
-    (assert(hotel (name (str-cat "sciascia-" ?n))(location ?n)(stars (random 1 5))(empty (random 100 300))(capacity 300)))
+    (assert(hotel (nome (str-cat "morandi-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
+    (assert(hotel (nome (str-cat "empedocle-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
+    (assert(hotel (nome (str-cat "leonardo-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
+    (assert(hotel (nome (str-cat "sciascia-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
 
 )
 
-;;PATH  (assert (path (resorts ?r) (length 1) (total-distance 0)))
+;;PATH  (assert (path (resorts ?r) (num-citta 1) (distanza-totale 0)))
 
 (deftemplate path
     (slot path-id (default-dynamic (gensym*)))
     (multislot locations)
-    (slot length (type INTEGER))
-    (slot total-distance (type FLOAT))
+    (multislot regioni)
+    (slot num-citta (type INTEGER))
+    (slot distanza-totale (type FLOAT))
     (slot score (type FLOAT)(default 0.0))
     
 )
 
-;; MODULE TRIP
+;; MODULE ITINERARIO
 
-(defmodule TRIP (export ?ALL))
+(defmodule ITINERARIO (export ?ALL))
 
-(deftemplate TRIP::trip
-    (slot trip-id (default-dynamic (gensym*)))
+(deftemplate ITINERARIO::itinerario
+    (slot itinerario-id (default-dynamic (gensym*)))
     (multislot locations)
     (multislot hotels (default ND ND ND ND ND))
-    (multislot costs (type INTEGER) (default 0 0 0 0 0))
-    (multislot days (type INTEGER) (default 0 0 0 0 0))
+    (multislot costi (type INTEGER) (default 0 0 0 0 0))
+    (multislot giorni (type INTEGER) (default 0 0 0 0 0))
     (multislot location-score (type FLOAT)(default 0.0 0.0 0.0 0.0 0.0))
     (multislot hotel-score (type FLOAT)(default 0.0 0.0 0.0 0.0 0.0))
-    (slot duration (type INTEGER)(default 0))
-    (slot tot-dist (type INTEGER) (range 0 ?VARIABLE))    
-    (slot total-score (type FLOAT)(default 0.0))
+    (slot durata (type INTEGER)(default 0))
+    (slot distanza-totale (type INTEGER) (range 0 ?VARIABLE))    
+    (slot score-totale (type FLOAT)(default 0.0))
 )
 
-(deftemplate TRIP::average-location-cf
-    (slot value)
+(deftemplate ITINERARIO::media-cf-location
+    (slot valore)
 )
 
-(deftemplate TRIP::banned-path
+(deftemplate ITINERARIO::path-bannati
     (slot path-id)
 )
