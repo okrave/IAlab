@@ -87,7 +87,7 @@
 
 (deftemplate DOMANDE::domanda
     (slot importanza (type INTEGER)) ;; Un valore da 0-3 per indicare l'importanza della domanda la domanda 0 verrà fatta prima della domanda 3
-    (slot descrizione (default ?NONE)) ;;ho cambiato attributo in descrizione per non confondersi con gli attributo asseriti
+    (slot descrizione (default ?NONE)) ;;ho viaggio-piu-regioni-genericocambiato attributo in descrizione per non confondersi con gli attributo asseriti
     (slot la-domanda (default ?NONE))
     (slot tipo (default normal))
     (multislot risposte-valide (default ?NONE))
@@ -97,22 +97,16 @@
 )
 
 (deffacts DOMANDE::lista-domande
+    ;; Iterazione 0
+    (domanda (descrizione periodo-viaggio)(importanza 0)(la-domanda " In quale periodo vorresti partire? [estate inverno indifferente] ")(risposte-valide estate inverno indifferente)(skippable FALSE))
     (domanda (tipo range)(descrizione durata-viaggio)(importanza 0) (la-domanda "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (risposte-valide 1 7) (skippable FALSE))
+    (domanda (tipo range)(descrizione numero-persone)(importanza 0)(la-domanda "Quante persone vogliono andare in vacanza? tra [2,10] ")(risposte-valide 2 10)(skippable FALSE))
+    (domanda (descrizione costo)(importanza 0)(la-domanda " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(risposte-valide economico normale costoso)(skippable FALSE))
+
+    ;; Iterazione 1
     (domanda (descrizione budget-viaggio-generico)(importanza 1) (la-domanda "Hai un budget massimo? [Si, No]") (risposte-valide si no) (skippable FALSE))
     (domanda (tipo range)(descrizione budget-viaggio)(importanza 1) (la-domanda "Qual'è il tuo budget? valore tra [200,5000]") (risposte-valide 200 5000) (skippable FALSE)(precursori budget-viaggio-generico is si))
     (domanda (descrizione viaggio-piu-regioni-generico)(importanza 1) (la-domanda "Vuoi visitare più regioni? [Si, No]") (risposte-valide Si No si no) (skippable FALSE))
-    ;;(domanda (tipo range)(descrizione viaggio-più-regioni)(importanza 1) (la-domanda "Quante regionei vorresti visitare? valore tra [2,6]") (risposte-valide  2 6) (skippable FALSE)(precursori viaggio-più-regioni-generic is si))
-    ;;(domanda (descrizione hotel-loc-preference)(importanza 1)(la-domanda "Credi sia più importante l'hotel o la città in cui stai? [hotel,location]")(risposte-valide hotel location)(skippable FALSE))
-
-    (domanda (descrizione numero-location-generico) (importanza 2) (la-domanda "Vuoi visitare meno location? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
-    (domanda (descrizione viaggio-regione-generico) (importanza 2) (la-domanda "Vuoi visitare qualche regionee in particolare? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
-
-    (domanda (descrizione viaggio-regione) (importanza 2) (la-domanda "Quale regionee vorresti visitare? ") (risposte-valide sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursori viaggio-regione-generico is si))
-
-    (domanda (tipo range)(descrizione numero-location)(importanza 2)(la-domanda "Quante città vuoi visitare?")(risposte-valide 1 7)(skippable FALSE)(precursori numero-location-generico is si))
-
-    ;;
-    (domanda (tipo range)(descrizione numero-persone)(importanza 0)(la-domanda "Quante persone vogliono andare in vacanza? tra [2,10] ")(risposte-valide 2 10)(skippable FALSE))
     (domanda (tipo range)(descrizione mangiare)(importanza 1)(la-domanda "Quanto è importante per te il buon cibo? tra [1,5] ")(risposte-valide 1 5)(skippable FALSE))
     (domanda (tipo range)(descrizione religione)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
     (domanda (tipo range)(descrizione cultura)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
@@ -120,7 +114,14 @@
     (domanda (tipo range)(descrizione naturalistico)(importanza 1)(la-domanda " Quanto dai importanza all'aspetto naturalisticoo di una localita' ? tra [1,5] ")(risposte-valide 1 5))
     (domanda (descrizione balneare-lacustre)(importanza 1)(la-domanda " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(risposte-valide balneare lacustre))
     (domanda (descrizione sport-termale)(importanza 1)(la-domanda " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(risposte-valide relax sport))
-    (domanda (descrizione costo)(importanza 0)(la-domanda " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(risposte-valide economico normale costoso)(skippable FALSE))
+
+    ;; Iterazione 2
+    (domanda (descrizione numero-location-generico) (importanza 2) (la-domanda "Vuoi visitare meno location? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
+    (domanda (descrizione viaggio-regione-generico) (importanza 2) (la-domanda "Vuoi visitare qualche regionee in particolare? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
+    (domanda (descrizione viaggio-regione) (importanza 2) (la-domanda "Quale regionee vorresti visitare? ") (risposte-valide sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursori viaggio-regione-generico is si))
+    (domanda (tipo range)(descrizione numero-location)(importanza 2)(la-domanda "Quante città vuoi visitare?")(risposte-valide 1 7)(skippable FALSE)(precursori numero-location-generico is si))
+
+    ;;
 )
 
 ;;MODULE LOCATION

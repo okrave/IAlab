@@ -124,6 +124,30 @@
         (assert(attributo (nome budget-viaggio-generico)(valore ?r)(certezza 1.0)))
    )
    
+   ;;--- Periodo viaggio
+    (defrule REGOLE:periodo-viaggio-estate
+        (preferenze (tipo periodo-viaggio)(risposta estate))
+        =>
+        (assert(attributo (nome periodo-viaggio)(valore estate)(certezza 1.0)))
+        ;;(assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.7)))
+        ;;(assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.4)))
+
+
+    )
+
+    (defrule REGOLE:periodo-viaggio-inverno
+        (preferenze (tipo periodo-viaggio)(risposta inverno))
+        =>
+        (assert(attributo (nome periodo-viaggio)(valore inverno)(certezza 1.0)))
+        ;;(assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.4)))
+        ;;(assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.7)))
+    )
+
+    (defrule REGOLE:periodo-viaggio-indifferente
+        (preferenze (tipo periodo-viaggio)(risposta indifferente))
+        =>
+        (assert(attributo (nome periodo-viaggio)(valore indifferente)(certezza 1.0)))
+    )
 
    ;;-------ITINERARIO num-citta
 
@@ -192,14 +216,14 @@
 
     )
 
-    (defrule REGOLE::viaggio-piu-regioni-generico
+    (defrule REGOLE::viaggio-piu-regioni-generico-si
 
         (preferenze (tipo viaggio-piu-regioni-generico)(risposta si))
         =>
         (assert(attributo(nome viaggio-piu-regioni-generico)(valore si)(certezza 1.0)))
     )
 
-    (defrule REGOLE::viaggio-piu-regioni-generico
+    (defrule REGOLE::viaggio-piu-regioni-generico-no
         (preferenze (tipo viaggio-piu-regioni-generico)(risposta no))
         =>
         (assert(attributo(nome viaggio-piu-regioni-generico)(valore no)(certezza 1.0)))
@@ -420,24 +444,26 @@
 )
 
 (defrule costruzione-singleton-path-semplice
-    (location (nome ?r))    
+    (location (nome ?r)(regione ?reg))    
     =>
-    (assert (path (locations ?r) (num-citta 1) (distanza-totale 0.0)(score 0.0)))
+    (assert (path (locations ?r)(regioni ?reg) (num-citta 1) (distanza-totale 0.0)(score 0.0)))
 )
 
 
 ;; Ritorna tutti i path con numero location < durata-viaggio in cui le distanze tra una citta e l'altra sia minore di max-km-GG e il totale dei km sia minore di durata-viaggio * max-km-GG < del itinerario
 (defrule costruzione-path-per-hotel
-    (path (locations $?rs ?lr) (num-citta ?len) (distanza-totale ?td)(score ?scr))
+    (path (locations $?rs ?lr)(regioni $?regioni) (num-citta ?len) (distanza-totale ?td)(score ?scr))
     
     (attributo (nome durata-viaggio) (valore ?tl))
     (test (<= (+ ?len  1) ?tl)) ;vincolo numero giorni
     (loc-to-loc (location-src ?lr) (location-dst ?nr) (distanza ?d)) 
+    (location (nome ?nr)(regione ?reg))
     (test (< ?d ?*MAX-KM-GG*)) ;;vincolo distanza giornaliera
     (test (eq (member$ ?nr (create$ ?rs ?lr)) FALSE))
+    
     =>
     (if (< (+ ?td ?d) (* ?*MAX-KM-GG* ?tl)) then
-        (assert (path (locations ?rs ?lr ?nr) (num-citta (+ ?len 1)) (distanza-totale (+ ?td ?d))(score ?scr)))
+        (assert (path (locations ?rs ?lr ?nr)(regioni ?regioni ?reg) (num-citta (+ ?len 1)) (distanza-totale (+ ?td ?d))(score ?scr)))
     )    
 )
 
@@ -481,6 +507,45 @@
 
 (defmodule COSTRUZIONE-ITINERARIO (import COMMON ?ALL) (import HOTEL ?ALL) (import ITINERARIO ?ALL))
 
+
+(deffunction calcolo-data-viaggio (?periodo)
+
+    (bind ?mesiEstivi (create$ luglio agosto settembre maggio giugno))
+    (bind ?mesiInvernali (create$ ottobre novembre dicembre gennaio febbraio))
+
+    (seed (round (time)))
+    (bind ?giorno (random 1 28))
+    (bind ?meseScelto nessuno)
+
+    
+    (if (eq ?periodo indifferente) then
+        (seed (round (time)))
+        (bind ?i (random 1 2))
+        (if (eq ?i 1) then
+            (bind ?periodo estate)
+        )
+
+        (if (eq ?i 2) then
+            (bind ?periodo inverno)
+        )
+    )
+
+    (if (eq ?periodo estate) then
+        (seed (round (time)))
+        (bind ?meseScelto (nth$ (random 1 5) ?mesiEstivi))
+
+    )
+
+    (if (eq ?periodo inverno) then
+        (seed (round (time)))
+        (bind ?meseScelto (nth$ (random 1 5) ?mesiInvernali))
+    )
+
+    (bind ?return (str-cat ?giorno " - " ?meseScelto " 2020"))
+    (return ?return)
+
+)
+
 (defrule COSTRUZIONE-ITINERARIO::media-cf-location
     (declare (salience 500))
     (attributo (nome valutazione-tipo-turismo))
@@ -515,7 +580,7 @@
     (not (path-bannati (path-id ?id)))
     (attributo (nome durata-viaggio) (valore ?ds))
 =>
-    (assert (itinerario (locations ?rs)(distanza-totale ?len)(durata ?len)))
+    (assert (itinerario (itinerario-id ?id) (locations ?rs)(distanza-totale ?len)(durata ?len)))
 )
 
 ;; Inserisce al campo giorni il minimo periodo di giorni in una citta, avremo un vettore in cui ci saranno tanti 1 quanti sono le città
@@ -528,6 +593,19 @@
     (bind ?count (member$ ?r (create$ $?rl ?r $?rr)))
     (modify ?t (giorni (replace$ ?d ?count ?count 1)))
 
+)
+
+
+(defrule COSTRUZIONE-ITINERARIO::scelta-periodo-viaggio
+    (declare (salience 5))    
+
+    (iterazione (i ?i))
+    (attributo(nome periodo-viaggio)(valore ?val))
+
+    =>   
+    
+    (bind ?data (calcolo-data-viaggio ?val))
+    (assert(attributo (nome periodo-singolo-viaggio)(valore ?data)))
 )
 
 
@@ -667,6 +745,7 @@
 
 (defrule valutazione-itinerario-by-locations
     (declare (salience 10))   
+    ;;(iterazione (i ?i&:(> ?i 0)))
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(giorni $?ds)(durata ?dr)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome valutazione-tipo-turismo)(valore ?l)(certezza ?lcf))
     (attributo (nome durata-viaggio)(valore ?td))
@@ -683,7 +762,7 @@
 )
 
 (defrule valutazione-itinerario-by-hotels
-    (declare (salience 10))   
+    (declare (salience 15))   
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome hotel-in ?l)(valore ?h)(certezza ?hcf)) ;; valutare se conviene usare l'attributo miglior-hotel-in
     (test (eq ?h (nth$ (member$ ?l (create$ ?ll ?l ?lr)) ?hs)))
@@ -699,15 +778,70 @@
     (assert (attributo (nome il-viaggio) (valore ?id) (certezza (+ ?ncf (* ?nl 0.015)))))
 )
 
-(defrule valutazione-itinerario-by-singola-regione
+(defrule valutazione-itinerario-con-specifica-regione
     (declare (salience 10))
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome viaggio-regione)(valore ?r))
     (location (nome ?l)(regione ?r))
     =>
-    (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))    
+    (assert (attributo (nome il-viaggio) (valore ?id) (certezza 1.0)))    
 
 )
+
+;; ritorna true se il path contiene solo una regione
+(deffunction path-piu-regioni ($?reg)
+    (bind ?isTrue TRUE)
+    (bind ?firstRegion (nth$ 1 ?reg))
+    (foreach ?regione $?reg
+        (bind ?isTrue (and ?isTrue (eq ?firstRegion ?regione)))
+    )
+    (printout t ?reg " contiene solo una regione? " ?isTrue)
+    (return ?isTrue)
+
+
+)
+
+(defrule valutazione-itinerario-piu-regioni
+    (declare (salience 10))
+    (attributo (nome viaggio-piu-regioni-generico)(valore si))
+    (itinerario (itinerario-id ?id)(locations $?loc))
+    (test (> (length$ ?loc) 1))
+    (path (path-id ?id)(regioni $?reg))
+    =>
+    (printout t (> (length$ ?loc) 1) " AAAAAABBBBBBAAAAAAAAAAAAAAAAAAA" crlf)
+
+    (bind ?support (path-piu-regioni ?reg))
+    (if (eq ?support TRUE) then
+        (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.2)))  
+    )
+
+    (if (eq ?support FALSE) then
+        (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))  
+    )
+
+)
+
+(defrule valutazione-itinerario-una-regione
+    (declare (salience 10))
+    (attributo (nome viaggio-piu-regioni-generico)(valore no))
+    (itinerario (itinerario-id ?id)(locations $?loc))
+    (test (> (length$ ?loc) 1))
+    (path (path-id ?id)(regioni $?reg))
+    =>
+    (printout t (> (length$ ?loc) 1) " AAAAAAAAAAAAAAAAAAAAAAAAA" crlf)
+
+    (bind ?support (path-piu-regioni ?reg))
+    (if (eq ?support TRUE) then
+        (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))  
+    )
+
+    (if (eq ?support FALSE) then
+        (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.20)))  
+    )
+
+)
+
+
 
 (deffunction sum-integer-list ($?lista)
     (bind ?result 0)
@@ -761,6 +895,7 @@
     (not (attributo (nome il-viaggio)(valore ?tid2&~?tid)(certezza ?tcf2&:(> ?tcf2 ?tcf))))
     (test (> ?tcf ?*MIN-PRINT-CF*))
     (itinerario (itinerario-id ?tid)(locations $?lc)(hotels $?hs)(giorni $?ds)(costi $?cs)(durata ?dr))
+    (attributo (nome periodo-singolo-viaggio)(valore ?data))
  
 =>
     (retract ?fact1)
@@ -773,6 +908,8 @@
     (printout t "  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
     (printout t "  - giorni partitioning: " ?ds crlf)
     (printout t "  - Daily costi: " (subseq$ ?cs 1 ?dr ) "  |  Total cost: " ?total-cost crlf) 
+    (printout t "  - Data viaggio: " ?data crlf)
+
     (printout t  crlf)
     (printout t "      _____________________________________________________" crlf)
     (printout t  crlf)
