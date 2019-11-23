@@ -888,10 +888,16 @@
 
 
 ;;---- DA FARE
-;;(defrule fill-itinerario-giorni-by-location    
+(defrule valutazione-itinerario-per-numero-location
+    
+    (attributo (nome numero-location)(valore ?v))
+    (itinerario (itinerario-id ?id)(locations $?loc))
+    (test (eq (length$ ?loc) ?v))
+    =>
+    (assert (attributo (nome il-viaggio) (valore ?id) (certezza 1.0)))
 
 
-;;)
+)
 
 
 
