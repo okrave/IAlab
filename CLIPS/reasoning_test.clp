@@ -285,8 +285,18 @@
 
     (defrule REGOLE::montagna-si
         (preferenze (tipo montagna)(risposta si))
+        (attributo(nome periodo-viaggio)(valore ?s))
+
     =>
-        (assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.6)))
+        (bind ?coeff 0.0)
+        (if (eq ?s inverno) then 
+            (bind ?coeff 0.1)
+        )
+        (if (eq ?s estate) then 
+            (bind ?coeff -0.1)
+        )
+
+        (assert (attributo (nome tipo-turismo)(valore montano)(certezza (+ 0.6 ?coeff))))
     )
     
     (defrule REGOLE::montagna-no
@@ -299,13 +309,22 @@
     (defrule REGOLE::naturalistico
         (preferenze (tipo naturalistico)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
+
         (assert (attributo (nome tipo-turismo)(valore naturalisticoo)(certezza (* 0.6 (/ ?a 5)))))
     )
 ;;--------------BALNEARE-LACUSTRE
     (defrule REGOLE::balneare
         (preferenze (tipo balneare-lacustre)(risposta balneare))
+        (attributo(nome periodo-viaggio)(valore ?s))
     =>
-        (assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.6)))
+        (bind ?coeff 0.0)
+        (if (eq ?s inverno) then 
+            (bind ?coeff -0.1)
+        )
+        (if (eq ?s estate) then 
+            (bind ?coeff 0.1)
+        )
+        (assert (attributo (nome tipo-turismo)(valore balneare)(certezza (+ 0.6 ?coeff))))
         (assert (attributo (nome tourist-tipo)(valore lacustre)(certezza 0.4)))
     )
     (defrule REGOLE::lacustre
