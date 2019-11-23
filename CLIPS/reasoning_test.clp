@@ -101,14 +101,21 @@
         (test (> ?i 0))
         =>
         (printout t "Entra in ask-the-end-domanda")
-        (bind ?q "Are you happy with one of the suggested itinerarios? [yes, no] ")
-        (bind ?va (create$ yes no))
+        (bind ?q "Sei soddisfatto dell'itinerario proposto? [si, no] ")
+        (bind ?va (create$ si no))
         (bind ?risposta (ask-question normal ?q ?va))
-        (if (eq ?risposta yes) then 
-            (printout t "Thank you for using our expert system. Have a good vacation!" crlf crlf)
+        (if (eq ?risposta si) then 
+            (printout t "Grazie per aver utilizzato la nostra applicazione. Buona vacanza!!" crlf crlf)
             (halt)
             ;;(reset)
         )
+
+        (if (and (eq ?risposta no) (> ?i 3)) then 
+            (printout t "Mi dispiace, non abbiamo trovato soluzioni. " crlf crlf)
+            (halt)
+            ;;(reset)
+        )
+        
     )
 
 
@@ -574,8 +581,6 @@
     (do-for-all-facts ((?f attributo)) (eq ?f:nome (create$ tipo-turismo))
     (bind ?sum (+ ?sum ?f:certezza))
     (bind ?count (+ ?count 1)))
-    
-    (printout t "media: " (/ ?sum ?count) crlf)
     (assert (media-cf-location (valore (/ ?sum ?count))))
 )
 
@@ -683,7 +688,6 @@
     (loop-for-count ?numberDay
         (if (> ?remainDay 0) then
             (bind ?maxvalore (max (expand$ ?itinerarioLocScore)))
-            (printout t "maxvalore di " ?itinerarioLocScore " è " ?maxvalore crlf)
             (bind ?index (member$ ?maxvalore ?itinerarioLocScore))
             (bind ?ls2 ?maxvalore)
           
@@ -709,8 +713,6 @@
     (test (< ?dur ?len))
     =>
     (bind ?rd (- ?len ?td))
-    (printout t "prima della funzione :")
-    (printout t $?hotelScore crlf)
     (bind ?supportList (lista-giorni (length$ (create$ $?rl ?r $?rr)) ?rd ?hotelScore))
     (modify ?t (giorni ?supportList)(durata ?len))
 )
@@ -814,9 +816,7 @@
     (foreach ?regione $?reg
         (bind ?isTrue (and ?isTrue (eq ?firstRegion ?regione)))
     )
-    (printout t ?reg " contiene solo una regione? " ?isTrue)
     (return ?isTrue)
-
 
 )
 
@@ -827,8 +827,6 @@
     (test (> (length$ ?loc) 1))
     (path (path-id ?id)(regioni $?reg))
     =>
-    (printout t (> (length$ ?loc) 1) " AAAAAABBBBBBAAAAAAAAAAAAAAAAAAA" crlf)
-
     (bind ?support (path-piu-regioni ?reg))
     (if (eq ?support TRUE) then
         (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.2)))  
@@ -847,8 +845,6 @@
     (test (> (length$ ?loc) 1))
     (path (path-id ?id)(regioni $?reg))
     =>
-    (printout t (> (length$ ?loc) 1) " AAAAAAAAAAAAAAAAAAAAAAAAA" crlf)
-
     (bind ?support (path-piu-regioni ?reg))
     (if (eq ?support TRUE) then
         (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))  
@@ -908,7 +904,7 @@
    (iterazione (i ?i))
 =>
    (printout t  crlf crlf)
-   (printout t " >>>>>>>>>>>>>>>   SELECTED ITINERARIOS (ITERAzione " (+ ?i 1) ")  <<<<<<<<<<<<<<<"  crlf)
+   (printout t "*********************   ITINERARI SCELTI DA NOI (ITERAZIONE " (+ ?i 1) ")  *******************"  crlf)
    (printout t  crlf)
    (assert (printed-itinerarios 0))
 )
@@ -928,15 +924,19 @@
     (retract ?fact2)
     (bind ?total-cost (+ (expand$ ?cs) 0))
     (printout t  crlf)
-    (printout t " Trip suggestion " (+ ?p 1) " with certezza: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
-    (printout t "  - Resorts to visit: " ?lc crlf)
-    (printout t "  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
-    (printout t "  - giorni partitioning: " ?ds crlf)
-    (printout t "  - Daily costi: " (subseq$ ?cs 1 ?dr ) "  |  Total cost: " ?total-cost crlf) 
-    (printout t "  - Data viaggio: " ?data crlf)
+    (printout t "Itinerario suggerio numero: " (+ ?p 1) " con certezza: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
+    (printout t "******************************************************************************************************" crlf)
+    (printout t  crlf)
+    (printout t "*  - Location da visitare: " ?lc crlf)
+    (printout t "*  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
+    (printout t "*  - Partizionamente giorni: " ?ds crlf)
+    (printout t "*  - Costi giornalieri: " (subseq$ ?cs 1 ?dr ) "  |  Costo Totale: " ?total-cost crlf) 
+    (printout t "*  - Data viaggio: " ?data crlf)
+    (printout t  crlf)
+    (printout t "******************************************************************************************************" crlf)
+
 
     (printout t  crlf)
-    (printout t "      _____________________________________________________" crlf)
     (printout t  crlf)
 
 )
@@ -949,7 +949,6 @@
 =>
     (retract ?fact)
     (assert (iterazione (i (+ ?i 1))))  ;;increment iterazione number
-
     (pop-focus)
 )
 
