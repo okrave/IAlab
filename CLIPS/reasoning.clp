@@ -18,14 +18,15 @@
     (declare (salience -1000))
     ?lista <- (sequenza-moduli ?prossimo-modulo $?altri-moduli)
 =>
-    (printout t "prossima fase: ")
-    (printout t ?prossimo-modulo )
+    ;;(printout t "prossima fase: ")
+    ;;(printout t ?prossimo-modulo )
     ;; Runno il primo focus
     (focus ?prossimo-modulo)
     (retract ?lista)
     ;; una volta runnato il primo focus runno il secondo e metto il primo in coda di modo che quando finisco tutti rirunno il primo
     (assert (sequenza-moduli ?altri-moduli ?prossimo-modulo)) 
 )
+
 
 ;;---------------------------------- MODULE ASK-QUESTION *
 
@@ -849,16 +850,6 @@
    (iterazione (i ?i))
 =>
    (printout t  crlf crlf)
-   (printout t  "               888888b.                                                         888 "crlf            
-                "               888   88b                                                        888 "  crlf           
-                "               888  .88P                                                        888 "       crlf      
-                "               8888888K.   .d88b.  88888b.  888  888  .d88b.  88888b.  888  888 888888  .d88b."   crlf 
-                "               888   Y88b d8P  Y8b 888  88b 888  888 d8P  Y8b 888  88b 888  888 888    d88  88b " crlf 
-                "               888    888 88888888 888  888 Y88  88P 88888888 888  888 888  888 888    888  888 " crlf 
-                "               888   d88P Y8b.     888  888  Y8bd8P  Y8b.     888  888 Y88b 888 Y88b.  Y88..88P " crlf 
-                "               8888888P     Y8888  888  888   Y88P     Y8888  888  888   Y88888   Y888   Y88P "  crlf crlf )    
-   (printout t "******************************   ITINERARI SCELTI DA NOI (ITERAZIONE " (+ ?i 1) ")  *****************************"  crlf)
-   (printout t  crlf)
    (assert (printed-itinerarios 0))
 )
 
