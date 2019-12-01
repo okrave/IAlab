@@ -212,7 +212,7 @@
 
     ;;---------  NUMERO LOCATION
     (defrule REGOLE::numero-location
-        (preferenze (tipo numero-location) (risposta ?s&:(and(> ?s 1)(< ?s 30))))         
+        (preferenze (tipo numero-location) (risposta ?s&:(and(>= ?s 1)(< ?s 8))))         
         =>
         
         (assert(attributo(nome numero-location)(valore ?s)(certezza 1.0)))
@@ -356,24 +356,22 @@
 
 
 
-;;*********************
-;;* MODULE VALUTAZIONE *
-;;*********************
+
+;;------------------------------------ MODULE VALUTAZIONE 
 
 (defmodule VALUTAZIONE (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL))
 
 
-
 ;;------ VALUTAZIONE HOTEL
 
-(defrule valutazione-hotel-per-stelle
+(defrule VALUTAZIONE::valutazione-hotel-per-stelle
     (attributo (nome stelle-hotel)(valore ?s)(certezza ?cf))
     (hotel (nome ?h)(location ?l)(stelle ?s))
 =>
     (assert (attributo (nome hotel-in ?l) (valore ?h)(certezza (* (/ ?cf 0.4) 0.7))))
 )
 
-(defrule valutazione-hotel-per-disponibilità
+(defrule VALUTAZIONE::valutazione-hotel-per-disponibilità
     (attributo (nome numero-persone)(valore ?p))
     (hotel (nome ?h) (location ?l) (posti-liberi ?e&:(> ?e ?p)) (capacità ?c))
 =>
@@ -381,12 +379,10 @@
     (assert (attributo (nome hotel-in ?l)(valore ?h)(certezza ?ncf)))
 )
 
-(defrule valutazione-hotel-per-zero-disponibilità
-    
+(defrule VALUTAZIONE::valutazione-hotel-per-zero-disponibilità    
     (attributo (nome numero-persone) (valore ?p))
     (hotel (nome ?h) (location ?l) (posti-liberi ?e&:(< ?e ?p)))
 =>
-    ;; DOMANDA PROF è giusto andare ad eliminare l'hotel in quanto non utilizzabile (perchè pieno)
     (assert (attributo (nome hotel-in ?l) (valore ?h) (certezza -1.0)))
 )
 
@@ -394,14 +390,14 @@
 
 ;;------ VALUTAZIONE LOCATION
 
- (defrule valutazione-location-per-tipo
+ (defrule VALUTAZIONE::valutazione-location-per-tipo
         (attributo (nome tipo-turismo)(valore ?v)(certezza ?a))
         (location-turistica(nome-location ?l)(tipo-turismo ?v)(score ?cf))
         =>
         (assert(attributo(nome valutazione-tipo-turismo)(valore ?l)(certezza (/ (* ?a ?cf) (* ?a 5)))))
  )
 
- (defrule valutazione-location-per-regione
+ (defrule VALUTAZIONE::valutazione-location-per-regione
         (attributo(nome viaggio-regione)(valore ?l)(certezza ?a))
         (location (nome ?na)(regione ?l))
         =>
@@ -411,20 +407,16 @@
 
 ;;----------------------------- PATH
 
-
-;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un itinerario è un insieme di città in cui non è importante l'ordine
-
 (defmodule PATH (import COMMON ?ALL) (import HOTEL ?ALL)(import LOCATION ?ALL)(export ?ALL))
 
-(deftemplate miglior-hotel-della-location
+(deftemplate PATH::miglior-hotel-della-location
     (slot nome-location)
     (slot miglior-hotel)
     (slot score(type FLOAT))
 
 )
 
-
-(defrule calcolo-miglior-hotel-della-location
+(defrule PATH::calcolo-miglior-hotel-della-location
         (location (nome ?r))
         (attributo (nome hotel-in ?r) (valore ?h) (certezza ?hcf))
         (not (attributo (nome hotel-in ?r) (valore ?h2&~?h) (certezza ?hcf2&:(> ?hcf2 ?hcf))))
@@ -434,7 +426,9 @@
         (assert(miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf)))
 )
 
-(defrule costruzione-singleton-path-semplice
+
+;; Crea tutti i path composti da una sola città
+(defrule PATH::costruzione-singleton-path-semplice
     (location (nome ?r)(regione ?reg))    
     =>
     (assert (path (locations ?r)(regioni ?reg) (num-citta 1) (distanza-totale 0.0)(score 0.0)))
@@ -442,9 +436,8 @@
 
 
 ;; Ritorna tutti i path con numero location < durata-viaggio in cui le distanze tra una citta e l'altra sia minore di max-km-GG e il totale dei km sia minore di durata-viaggio * max-km-GG < del itinerario
-(defrule costruzione-path
-    (path (locations $?rs ?lr)(regioni $?regioni) (num-citta ?len) (distanza-totale ?td)(score ?scr))
-    
+(defrule PATH::costruzione-path
+    (path (locations $?rs ?lr)(regioni $?regioni) (num-citta ?len) (distanza-totale ?td)(score ?scr))    
     (attributo (nome durata-viaggio) (valore ?tl))
     (test (<= (+ ?len  1) ?tl)) ;vincolo numero giorni
     (loc-to-loc (location-src ?lr) (location-dst ?nr) (distanza ?d)) 
@@ -459,8 +452,8 @@
 )
 
 
-
-(defrule eliminazione-path-simili
+;; I path simili sono quelli aventi stesse città ma ordine diverso, stabiliamo quindi che un itinerario è un insieme di città in cui non è importante l'ordine
+(defrule PATH::eliminazione-path-simili
     ?p1 <- (path (path-id ?id1)(locations $?rs))
     ?p2 <- (path (path-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
     (test (subsetp ?rs ?rs1))
@@ -469,7 +462,7 @@
     (retract ?p1)
 )
 
-(defrule pruning-numero-location-nel-path
+(defrule PATH::pruning-numero-location-nel-path
     (attributo (nome numero-location) (valore ?tl))
     ?p <- (path (num-citta ?len))
     ;; Se la differenza tra la durata del itinerario e la durata del path è maggiore di 1
@@ -481,24 +474,12 @@
 
 
 
- ;;----------------------------------ITINERARIO
+;;----------------------------------ITINERARIO
 
-;; Trip con sole le location
-
-;;(defrule build-simple-itinerario
-
-;;)
+(defmodule COSTRUZIONE-ITINERARIO(import COMMON ?ALL) (import HOTEL ?ALL) (import ITINERARIO ?ALL)(import PATH ?ALL))
 
 
-
-;; prima valutare gli hotel in quanto sono indipendi rispetto le città. io posso andare a valutare gli hotel  solo in base alle stelle e numero di posti disponibili
-
-;; dopo valutare le location  che è dipendente dalla tipologia di itinerario e dall'esistenza di hotel che possa soddisfare stelle-numero posti
-
-(defmodule COSTRUZIONE-ITINERARIO (import COMMON ?ALL) (import HOTEL ?ALL) (import ITINERARIO ?ALL))
-
-
-(deffunction calcolo-data-viaggio (?periodo)
+(deffunction COSTRUZIONE-ITINERARIO::calcolo-data-viaggio (?periodo)
 
     (bind ?mesiEstivi (create$ luglio agosto settembre maggio giugno))
     (bind ?mesiInvernali (create$ ottobre novembre dicembre gennaio febbraio))
@@ -574,7 +555,7 @@
 
 
 ;; Inserisce al campo giorni il minimo periodo di giorni in una citta, avremo un vettore in cui ci saranno tanti 1 quanti sono le città
-(defrule inserimento-giorni-itinerario-basico
+(defrule COSTRUZIONE-ITINERARIO::inserimento-giorni-itinerario-basico
     (iterazione (i ?i))
     (test (eq ?i 0))
     ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d))
@@ -584,16 +565,26 @@
     (modify ?t (giorni (replace$ ?d ?count ?count 1)))
 
 )
+;; Per ogni itinerario andiamo ad aggiungere il vettore dei miglior hotel per città e in base al numero di persone andiamo a calcolare i costi
+(defrule COSTRUZIONE-ITINERARIO::modifica-itinerario-per-hotel-costi
+    (declare (salience 0))
+    ?t <- (itinerario (locations $?rl ?r $?rr) (hotels $?hs) (giorni $?ds) (costi $?cs)(hotel-score $?hscore))
+    (miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf))
+    (hotel (nome ?h)(location ?r)(stelle ?s))
+    (attributo (nome numero-persone) (valore ?p))    
+    =>
+    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
+    (bind ?daily-cost (+ ?*HOTEL-COSTO-BASE* (* ?s ?*HOTEL-COSTO-ADDIZIONALE*)))
+    (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
+    (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costi (replace$ ?cs ?count ?count ?cost-all-people))(hotel-score (replace$ ?hscore ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
+)
 
 
 (defrule COSTRUZIONE-ITINERARIO::scelta-periodo-viaggio
-    (declare (salience 5))    
-
+    (declare (salience 5))
     (iterazione (i ?i))
     (attributo(nome periodo-viaggio)(valore ?val))
-
     =>   
-    
     (bind ?data (calcolo-data-viaggio ?val))
     (assert(attributo (nome periodo-singolo-viaggio)(valore ?data)))
 )
@@ -602,7 +593,7 @@
 (defmodule VALUTAZIONE-ITINERARIO (import PATH ?ALL)(import COMMON ?ALL) (import HOTEL ?ALL)(import ITINERARIO ?ALL)(import LOCATION ?ALL))
 
 
-(defrule pruning-numero-location-nell-itinerario
+(defrule VALUTAZIONE-ITINERARIO::pruning-numero-location-nell-itinerario
     (declare (salience 10000))
     (attributo (nome numero-location) (valore ?tl))
     ?p <- (itinerario (locations $?rl))
@@ -612,47 +603,18 @@
     (retract ?p)
 )
 
-(defrule eliminazione-itinerari-simili
+(defrule VALUTAZIONE-ITINERARIO::eliminazione-itinerari-simili
     (declare (salience 10000))
     ?p1 <- (itinerario (itinerario-id ?id1)(locations $?rs))
     ?p2 <- (itinerario (itinerario-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
-    (test (eq $?rs $?rs1))
-  
+    (test (eq $?rs $?rs1))  
     =>
-    (printout t  "ASDASDASDASDASDASDASDASD" ?rs)
     (retract ?p1)
 )
 
-(defrule modifica-itinerario-per-hotel-costi
-    (declare (salience 1000))
-    ?t <- (itinerario (locations $?rl ?r $?rr) (hotels $?hs) (giorni $?ds) (costi $?cs)(hotel-score $?hscore))
-    (miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf))
-    (hotel (nome ?h)(location ?r)(stelle ?s))
-    (attributo (nome numero-persone) (valore ?p))    
-    =>
-    (bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
-    (bind ?daily-cost (+ ?*HOTEL-COSTO-BASE* (* ?s ?*HOTEL-COSTO-ADDIZIONALE*)))
-    (bind ?cost-all-people (* (max 1 (div ?p 2)) ?daily-cost))
-   
-    ;;(bind ?cost-all-giorni (* (nth$ ?index ?ds) ?cost-all-people))
-    (modify ?t (hotels (replace$ ?hs ?count ?count ?h))(costi (replace$ ?cs ?count ?count ?cost-all-people))(hotel-score (replace$ ?hscore ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
-)
 
-;;Non funziona
-;;(defrule add-itinerario-hotel-score
-    ;;(declare (salience 10))
-    ;;(printout t "prima entra in add-itinerario-hotel-score")
-    ;;?t <- (itinerario (locations $?rl ?r $?rr) (hotels $?hs)(hotel-score $?ls))
-    ;;(miglior-hotel-della-location(nome-location ?r)(miglior-hotel ?h)(score ?hcf))
-
-    ;;=>
-    ;;(printout t "entra in add-itinerario-hotel-score")
-    ;;(bind ?count (member$ ?r (create$ ?rl ?r ?rr))) ;; assegna a count la posizione di ?r rispetto la lista delle location del itinerario
-    ;;(modify ?t (hotel-score (replace$ ?hs ?count ?count ?hcf))) ;;il replace vuole 4 argomenti il primo è quello da sotituire, l'ultimo quello che rimpiazza il primo, quelli di mezzo sono interi che indicano l'indice del valore del multislot da sostituire 
-;;)
-
-
-(defrule aggiunta-location-score
+;; Per ogni itinerario andiamo ad aggiungere il vettore contenente gli score delle citta che lo compongono
+(defrule VALUTAZIONE-ITINERARIO::aggiunta-location-score
     (declare (salience 1000))
     ?t <- (itinerario (locations $?rl ?r $?rr)(location-score $?ls))
     (attributo (nome valutazione-tipo-turismo)(valore ?r)(certezza ?cf))
@@ -662,9 +624,7 @@
 )
 
 ;;--- Funzione che ripartisce i giorni rimanenti (?remainDay) in base allo score della lista
-;; 
-(deffunction lista-giorni(?numberOfLoc ?remainDay $?itinerarioLocScore)
- 
+(deffunction VALUTAZIONE-ITINERARIO::lista-giorni(?numberOfLoc ?remainDay $?itinerarioLocScore) 
     (bind ?supportList (create$ 0 0 0 0 0))
     (bind ?counter 1)
     (loop-for-count ?numberOfLoc
@@ -688,13 +648,11 @@
     
     )
     (return ?supportList)
-
 )
 
-
-(defrule modifica-giorni-itinerario-by-hotel
+;; Assegnazione lista giorni per città
+(defrule VALUTAZIONE-ITINERARIO::modifica-giorni-itinerario-by-hotel
     (declare (salience 100))
-    ;;(attributo (nome hotel-loc-preference)(valore hotel)(certezza ?cf))
     ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(hotel-score $?hotelScore)(durata ?dur))
     (attributo (nome durata-viaggio)(valore ?len))    
     (test (< ?dur ?len))
@@ -704,8 +662,8 @@
     (modify ?t (giorni ?supportList)(durata ?len))
 )
 
-;; Funzione che ritorta true se una la somma di una lista di interi è uguale ad un intero
-(deffunction sum-list-equal-integer (?integer $?lista)
+;; Funzione che ritorta true se la somma di una lista di interi è uguale ad un numero
+(deffunction VALUTAZIONE-ITINERARIO::sum-list-equal-integer (?integer $?lista)
     (bind ?result 0)
     (foreach ?number $?lista
         (bind ?result (+ ?result ?number))
@@ -715,7 +673,7 @@
 )
 
 ;;Rule che printa i itinerario che hanno la somma dei giorni di un itinerario diversa dall'attributo durata-viaggio 
-(defrule check-numero-giorni
+(defrule VALUTAZIONE-ITINERARIO::check-numero-giorni
     (declare (salience 20))
     ?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(hotel-score $?hotelScore)(durata ?dur))
     =>
@@ -727,33 +685,14 @@
         (printout t ?dur)
         (printout t "  è diverso dalla durata del itinerario: ")
         (printout t ?d crlf)
-    )
-
-    
+    )   
 
 )
 
 
-;;---- DA FARE
-;;(defrule fill-itinerario-giorni-by-location    
-  ;;  (declare (salience 100))    
-    ;;(attributo (nome hotel-loc-preference)(valore location)(certezza ?cf))
-    ;;?t <- (itinerario (locations $?rl ?r $?rr)(giorni $?d)(distanza-totale ?td)(location-score ?locationScore)(durata ?dur))
-    ;;(attributo (nome durata-viaggio)(valore ?len))    
-    ;;(test (< ?dur ?len))
-    ;;=>
-    ;;(bind ?rd (- ?len ?td))
-    ;;(bind ?supportList (lista-giorni (length$ (create$ $?rl ?r $?rr)) ?rd ?locationScore))
-    ;;(printout  t "lista giorni: " ?supportList crlf)
-    ;;(modify ?t (giorni ?supportList)(durata ?len))
 
-;;)
-
-
-
-(defrule valutazione-itinerario-by-locations
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-by-locations
     (declare (salience 10))   
-    ;;(iterazione (i ?i&:(> ?i 0)))
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(giorni $?ds)(durata ?dr)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome valutazione-tipo-turismo)(valore ?l)(certezza ?lcf))
     (attributo (nome durata-viaggio)(valore ?td))
@@ -761,15 +700,12 @@
     (bind ?locLen (length$ (create$ $?ll ?l $?lr)))
     (bind ?count (member$ ?l (create$ ?ll ?l ?lr)))
     (bind ?d (nth$ ?count ?ds))
-    
-    ;;(bind ?ncf (/ (sum-integer-list ?lls) ?nl))
     (bind ?ncf ?lcf)
-    ;;(printout t (create$ $?ll ?l $?lr) " con hotel score: " $?hhs " e location-score: " $?lls " la valutazione è: " (+ ?ncf (* ?locLen 0.05)) crlf)
     (assert (attributo (nome il-viaggio)(valore ?id)(certezza (+ ?ncf (* ?nl 0.017)))  ))
 
 )
 
-(defrule valutazione-itinerario-by-hotels
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-by-hotels
     (declare (salience 15))   
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome hotel-in ?l)(valore ?h)(certezza ?hcf)) ;; valutare se conviene usare l'attributo miglior-hotel-in
@@ -779,14 +715,11 @@
     (bind ?locLen (length$ (create$ $?ll ?l $?lr)))
     (bind ?count (member$ ?l (create$ ?ll ?l ?lr)))
     (bind ?d (nth$ ?count ?ds))
-    ;;(bind ?ncf (/ (sum-integer-list ?hhs) ?nl))
     (bind ?ncf ?hcf)
-    ;;(printout t (create$ $?ll ?l $?lr) " con hotel score: " $?hhs " e location-score: " $?lls " la valutazione è: " (+ ?ncf (* ?locLen 0.05)) crlf)
-
     (assert (attributo (nome il-viaggio) (valore ?id) (certezza (+ ?ncf (* ?nl 0.015)))))
 )
 
-(defrule valutazione-itinerario-con-specifica-regione
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-con-specifica-regione
     (declare (salience 10))
     (itinerario (itinerario-id ?id)(locations $?ll ?l $?lr)(hotels $?hs)(giorni $?ds)(durata ?dr)(score-totale ?ts)(hotel-score $?hhs)(location-score $?lls)(distanza-totale ?nl&:(> ?nl 1)))
     (attributo (nome viaggio-regione)(valore ?r))
@@ -797,7 +730,7 @@
 )
 
 ;; ritorna true se il path contiene solo una regione
-(deffunction path-piu-regioni ($?reg)
+(deffunction VALUTAZIONE-ITINERARIO::path-piu-regioni ($?reg)
     (bind ?isTrue TRUE)
     (bind ?firstRegion (nth$ 1 ?reg))
     (foreach ?regione $?reg
@@ -807,7 +740,7 @@
 
 )
 
-(defrule valutazione-itinerario-piu-regioni
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-piu-regioni
     (declare (salience 10))
     (attributo (nome viaggio-piu-regioni-generico)(valore si))
     (itinerario (itinerario-id ?id)(locations $?loc))
@@ -825,7 +758,7 @@
 
 )
 
-(defrule valutazione-itinerario-una-regione
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-una-regione
     (declare (salience 10))
     (attributo (nome viaggio-piu-regioni-generico)(valore no))
     (itinerario (itinerario-id ?id)(locations $?loc))
@@ -843,42 +776,47 @@
 
 )
 
-(defrule eliminazione-viaggi
+(defrule VALUTAZIONE-ITINERARIO::eliminazione-viaggi
     (declare (salience 0))
     (attributo (nome il-viaggio) (valore ?id) (certezza ?cf))
     (attributo (nome il-viaggio) (valore ?id) (certezza ?cfd))
     (test (neq ?cf ?cfd))
     =>
-    (printout t  "------------------------------------------------- EEEEsistono piu viaggi: " ?id  crlf)
-
-
+    (printout t  "Esistono piu viaggi: " ?id  crlf)
 )
 
 
 
-(deffunction sum-integer-list ($?lista)
+(deffunction VALUTAZIONE-ITINERARIO::sum-integer-list ($?lista)
     (bind ?result 0)
     (foreach ?number $?lista
         (bind ?result (+ ?result ?number))
     )
-
     return ?result
 )
 
-(defrule valutazione-itinerario-by-budget
+(defrule VALUTAZIONE-ITINERARIO::valutazione-itinerario-by-budget
     (declare (salience 10))
     (attributo (nome budget-viaggio)(valore ?r))
     (itinerario (itinerario-id ?id)(distanza-totale ?nl&:(> ?nl 1))(costi $?costi))
-    
-
     =>
-    (bind ?tc (sum-integer-list ?costi) ) 
-
+    (bind ?tc (sum-integer-list ?costi))
     (if (< ?tc ?r) then
         (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))
     )
 )
 
+(defrule VALUTAZIONE-ITINERARIO::pruning-itinerario-by-budget
+    (declare (salience 10))
+    (attributo (nome budget-viaggio)(valore ?r))
+    ?t <- (itinerario (itinerario-id ?id)(distanza-totale ?nl&:(> ?nl 1))(costi $?costi))
+    =>
+    (bind ?tc (sum-integer-list ?costi))
+    (if (> ?tc ?r) then
+        (retract ?t)
+    )
+
+)
 
 
 ;;---- Valutazione-itinerario
@@ -894,29 +832,37 @@
 
 (defmodule STAMPA-RISULTATI (import COMMON ?ALL) (import ITINERARIO ?ALL))
 
-(defrule VALUTAZIONE-ITINERARIO::numero-itinerario    
-    (declare (salience 0))
-    (iterazione (i ?i))
-=>    
-    (bind ?count 0)
-    (do-for-all-facts ((?f itinerario)) TRUE
-        (bind ?count (+ ?count 1))
+    (defrule numero-itinerario    
+        (declare (salience 0))
+        (iterazione (i ?i))
+    =>    
+        (bind ?count 0)
+        (do-for-all-facts ((?f itinerario)) TRUE
+            (bind ?count (+ ?count 1))
+        )
+        (printout t "---------------------------------------------------------- numero itinerari: " ?count crlf)
     )
-    (printout t "---------------------------------------------------------- numero itinerari: " ?count crlf)
-)
 
 
-(defrule results-header
+(defrule intestazione-risultati
    (declare (salience 500))
    (iterazione (i ?i))
 =>
    (printout t  crlf crlf)
-   (printout t "*********************   ITINERARI SCELTI DA NOI (ITERAZIONE " (+ ?i 1) ")  *******************"  crlf)
+   (printout t  "               888888b.                                                         888 "crlf            
+                "               888   88b                                                        888 "  crlf           
+                "               888  .88P                                                        888 "       crlf      
+                "               8888888K.   .d88b.  88888b.  888  888  .d88b.  88888b.  888  888 888888  .d88b."   crlf 
+                "               888   Y88b d8P  Y8b 888  88b 888  888 d8P  Y8b 888  88b 888  888 888    d88  88b " crlf 
+                "               888    888 88888888 888  888 Y88  88P 88888888 888  888 888  888 888    888  888 " crlf 
+                "               888   d88P Y8b.     888  888  Y8bd8P  Y8b.     888  888 Y88b 888 Y88b.  Y88..88P " crlf 
+                "               8888888P     Y8888  888  888   Y88P     Y8888  888  888   Y88888   Y888   Y88P "  crlf crlf )    
+   (printout t "******************************   ITINERARI SCELTI DA NOI (ITERAZIONE " (+ ?i 1) ")  *****************************"  crlf)
    (printout t  crlf)
    (assert (printed-itinerarios 0))
 )
 
-(defrule print-and-remove-best-itinerario
+(defrule stampa-e-rimozione-miglior-itinerario
     ?fact1 <- (printed-itinerarios ?p)
     (test (< ?p 5))
     ?fact2 <- (attributo (nome il-viaggio)(valore ?tid)(certezza ?tcf))
@@ -934,7 +880,7 @@
     (printout t "Itinerario suggerio numero: " (+ ?p 1) " con certezza: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
     (printout t "******************************************************************************************************" crlf)
     (printout t  crlf)
-    (printout t "*  - Location da visitare: " ?lc ?tid crlf)
+    (printout t "*  - Location da visitare: " ?lc crlf)
     (printout t "*  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
     (printout t "*  - Partizionamente giorni: " ?ds crlf)
     (printout t "*  - Costi giornalieri: " (subseq$ ?cs 1 ?dr ) "  |  Costo Totale: " ?total-cost crlf) 
@@ -950,18 +896,14 @@
 
 (defmodule REGOLE-FINALI (import COMMON ?ALL) (import ITINERARIO ?ALL))
 
-(defrule REGOLE-FINALI::on-exit
+(defrule REGOLE-FINALI::incrementa-iterazione
     (declare (salience 1000))
     ?fact <- (iterazione (i ?i))
 =>
     (retract ?fact)
-    (assert (iterazione (i (+ ?i 1))))  ;;increment iterazione number
+    (assert (iterazione (i (+ ?i 1))))
+    ;; Toglie dal focus REGOLE-FINALI di modo da iniziare un altro ciclo
     (pop-focus)
 )
 
-(defrule REGOLE-FINALI::plsstop
-    (declare (salience 400))
-    (iterazione (i ?i))
-=>
-    (halt)
-) 
+ 

@@ -1,9 +1,9 @@
-;;--------------------------------------------------------------- COMMON
+;;--------------- COMMON
 
 (defmodule COMMON (export ?ALL))
 
 (defglobal
-    ?*MAX-TOURISM-SCORE* = 5
+
     ?*MAX-KM-GG* = 150
     ?*HOTEL-COSTO-BASE* = 50
     ?*HOTEL-COSTO-ADDIZIONALE* = 25    
@@ -17,7 +17,6 @@
 
 )
 
-
 (deftemplate iterazione
     (slot i (type INTEGER))
 )
@@ -26,11 +25,8 @@
     (iterazione (i 0))
 )
 
-
-
-;;---------- COMBINE CERTAINTIES ------------
+;;--------------- COMBINE CERTAINTIES 
   
-
 (defrule  gestione-certezze-positive
     (declare (auto-focus TRUE))
     ?fact1 <- (attributo (nome $?n) (valore ?v) (certezza ?C1))
@@ -45,11 +41,8 @@
 )
 
 
+;;----------------- DOMANDE
 
-
-
-
-;; DOMANDE
 (defmodule DOMANDE (export ?ALL))
 
    
@@ -71,30 +64,29 @@
 
 (deffacts DOMANDE::lista-domande
     ;; Iterazione 0
-    (domanda (descrizione periodo-viaggio)(importanza 0)(la-domanda " In quale periodo vorresti partire? [estate inverno indifferente] ")(risposte-valide estate inverno indifferente)(skippable FALSE))
-    (domanda (tipo range)(descrizione durata-viaggio)(importanza 0) (la-domanda "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (risposte-valide 1 7) (skippable FALSE))
-    (domanda (tipo range)(descrizione numero-persone)(importanza 0)(la-domanda "Quante persone vogliono andare in vacanza? tra [2,10] ")(risposte-valide 2 10)(skippable FALSE))
-    (domanda (descrizione costo)(importanza 0)(la-domanda " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(risposte-valide economico normale costoso)(skippable FALSE))
+    (domanda (descrizione periodo-viaggio)(importanza 0)(la-domanda " In quale periodo vorresti partire? [estate inverno indifferente] ")(risposte-valide estate inverno indifferente))
+    (domanda (tipo range)(descrizione durata-viaggio)(importanza 0) (la-domanda "Quanti giorni vuoi che la vacanza duri? valore tra [1,7]") (risposte-valide 1 7))
+    (domanda (tipo range)(descrizione numero-persone)(importanza 0)(la-domanda "Quante persone vogliono andare in vacanza? tra [2,10] ")(risposte-valide 2 10))
+    (domanda (descrizione costo)(importanza 0)(la-domanda " Vuoi fare un viaggo economico o più costoso? [economico normale costoso] ")(risposte-valide economico normale costoso))
 
     ;; Iterazione 1
-    (domanda (descrizione budget-viaggio-generico)(importanza 1) (la-domanda "Hai un budget massimo? [Si, No]") (risposte-valide si no) (skippable FALSE))
-    (domanda (tipo range)(descrizione budget-viaggio)(importanza 1) (la-domanda "Qual'è il tuo budget? valore tra [200,5000]") (risposte-valide 200 5000) (skippable FALSE)(precursori budget-viaggio-generico is si))
-    (domanda (descrizione viaggio-piu-regioni-generico)(importanza 1) (la-domanda "Vuoi visitare più regioni? [Si, No]") (risposte-valide Si No si no) (skippable FALSE))
-    (domanda (tipo range)(descrizione mangiare)(importanza 1)(la-domanda "Quanto è importante per te il buon cibo? tra [1,5] ")(risposte-valide 1 5)(skippable FALSE))
-    (domanda (tipo range)(descrizione religione)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
-    (domanda (tipo range)(descrizione cultura)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(risposte-valide 1 5)(skippable FALSE))
-    (domanda (descrizione montagna)(importanza 1)(la-domanda " Ti piacciono i luoghi montani? [si,no] " )(risposte-valide si no)(skippable FALSE))
+    (domanda (descrizione budget-viaggio-generico)(importanza 1) (la-domanda "Hai un budget massimo? [Si, No]") (risposte-valide si no))
+    (domanda (tipo range)(descrizione budget-viaggio)(importanza 1) (la-domanda "Qual'è il tuo budget? valore tra [200,5000]") (risposte-valide 200 5000)(precursori budget-viaggio-generico is si))
+    (domanda (descrizione viaggio-piu-regioni-generico)(importanza 1) (la-domanda "Vuoi visitare più regioni? [Si, No]") (risposte-valide Si No si no))
+    (domanda (tipo range)(descrizione mangiare)(importanza 1)(la-domanda "Quanto è importante per te il buon cibo? tra [1,5] ")(risposte-valide 1 5))
+    (domanda (tipo range)(descrizione religione)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto religioso di una località? tra [1,5]")(risposte-valide 1 5))
+    (domanda (tipo range)(descrizione cultura)(importanza 1)(la-domanda "Quanto è importante per te l'aspetto culturale di una località? tra [1,5]")(risposte-valide 1 5))
+    (domanda (descrizione montagna)(importanza 1)(la-domanda " Ti piacciono i luoghi montani? [si,no] " )(risposte-valide si no))
     (domanda (tipo range)(descrizione naturalistico)(importanza 1)(la-domanda " Quanto dai importanza all'aspetto naturalisticoo di una localita' ? tra [1,5] ")(risposte-valide 1 5))
     (domanda (descrizione balneare-lacustre)(importanza 1)(la-domanda " Preferisci un turismo balneare o di tipo lacustre ? [balneare lacustre]" )(risposte-valide balneare lacustre))
     (domanda (descrizione sport-termale)(importanza 1)(la-domanda " In vacanza vuoi rilassarti o mantenerti attivo facendo sport ? [relax sport] ")(risposte-valide relax sport))
 
     ;; Iterazione 2
-    (domanda (descrizione numero-location-generico) (importanza 2) (la-domanda "Vuoi visitare meno location? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
-    (domanda (descrizione viaggio-regione-generico) (importanza 2) (la-domanda "Vuoi visitare qualche regionee in particolare? [Si,No]") (risposte-valide Si No si no) (skippable FALSE))
-    (domanda (descrizione viaggio-regione) (importanza 2) (la-domanda "Quale regionee vorresti visitare? ") (risposte-valide sicilia calabria puglia toscana liguria lombardia piemonte lazio) (skippable FALSE)(precursori viaggio-regione-generico is si))
-    (domanda (tipo range)(descrizione numero-location)(importanza 2)(la-domanda "Quante città vuoi visitare?")(risposte-valide 1 7)(skippable FALSE)(precursori numero-location-generico is si))
+    (domanda (descrizione numero-location-generico) (importanza 2) (la-domanda "Vuoi visitare meno location? [Si,No]") (risposte-valide Si No si no))
+    (domanda (descrizione viaggio-regione-generico) (importanza 2) (la-domanda "Vuoi visitare qualche regionee in particolare? [Si,No]") (risposte-valide Si No si no))
+    (domanda (descrizione viaggio-regione) (importanza 2) (la-domanda "Quale regionee vorresti visitare? ") (risposte-valide sicilia calabria puglia toscana liguria lombardia piemonte lazio)(precursori viaggio-regione-generico is si))
+    (domanda (tipo range)(descrizione numero-location)(importanza 2)(la-domanda "Quante città vuoi visitare?")(risposte-valide 1 7)(precursori numero-location-generico is si))
 
-    ;;
 )
 
 ;;MODULE LOCATION
@@ -146,8 +138,6 @@
     (location (nome asti) (regione piemonte)(altitudine 44.53) (longitudine 08.11)) 
     (location (nome torino) (regione piemonte)(altitudine 45.04) (longitudine 07.42)) 
     (location (nome pinerolo) (regione piemonte)(altitudine 45.10) (longitudine 08.00))  
-
-
     
 )
 
@@ -166,7 +156,6 @@
     (bind ?l1_rad (* ?l1 (/ (pi) 180)))
     (bind ?l_rad (* ?l (/ (pi) 180)))
     (bind ?km_distanza (* 6372.795 (acos (+ (* (sin ?a_rad)(sin ?a1_rad)) (* (* (cos ?a_rad) (cos ?a1_rad)) (cos (- ?l_rad ?l1_rad))) )) ))
-    ;;(bind ?euclidian_distanza (sqrt(+ (** (- ?l ?l1) 2) (** (- ?a ?a1) 2))))
     (assert(loc-to-loc(location-src ?n)(location-dst ?n1)(distanza ?km_distanza))) 
 
 )
@@ -205,8 +194,6 @@
 
 )
 
-;;PATH  (assert (path (resorts ?r) (num-citta 1) (distanza-totale 0)))
-
 (deftemplate path
     (slot path-id (default-dynamic (gensym*)))
     (multislot locations)
@@ -224,7 +211,7 @@
 (deftemplate ITINERARIO::itinerario
     (slot itinerario-id (default-dynamic (gensym*)))
     (multislot locations)
-    (multislot hotels (default ND ND ND ND ND ND ND))
+    (multislot hotels (default * * * * * * *))
     (multislot costi (type INTEGER) (default 0 0 0 0 0 0 0))
     (multislot giorni (type INTEGER) (default 0 0 0 0 0 0 0))
     (multislot location-score (type FLOAT)(default 0.0 0.0 0.0 0.0 0.0 0.0 0.0))
