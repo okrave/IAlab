@@ -232,7 +232,7 @@
 
 ;;-------------- MANGIARE
     (defrule REGOLE::mangiare
-        (preferenze (tipo mangiare)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
+        (preferenze (tipo enogastronomico)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
         ;; valore massimo 0.6  
         (assert (attributo (nome tipo-turismo)(valore enogastronomico)(certezza (* 0.6 (/ ?a 5)))))
@@ -247,7 +247,7 @@
     )
 ;;--------------CULTURA
     (defrule REGOLE::cultura
-        (preferenze (tipo cultura)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
+        (preferenze (tipo culturale)(risposta ?a&:(and (> ?a 0)(< ?a 6))))
     =>
        
         (assert (attributo (nome tipo-turismo)(valore culturale)(certezza (* 0.6 (/ ?a 5)))))
