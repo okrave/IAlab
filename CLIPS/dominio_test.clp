@@ -5,7 +5,7 @@
 
 (defglobal
 
-    ?*MAX-KM-GG* = 150
+    ?*MAX-KM-GG* = 250
     ?*HOTEL-COSTO-BASE* = 50
     ?*HOTEL-COSTO-ADDIZIONALE* = 25    
     ?*MIN-PRINT-CF* = 0.20
@@ -107,36 +107,22 @@
     (slot distanza (type FLOAT))
 )
 
-(deftemplate location-turistica
-    (slot nome-location (default ?NONE))
-    (slot tipo-turismo (default ?NONE))
-    (slot score(type INTEGER) (range 1 5))
-)
+
 
 
 (deffacts location-list
     (location (nome agrigento) (regione sicilia)(altitudine 37.31) (longitudine 12.58))
     (location (nome palermo) (regione sicilia)(altitudine 38.14) (longitudine 13.31))
-    (location (nome catania) (regione sicilia)(altitudine 37.51) (longitudine 15.08))
-    (location (nome scilla) (regione calabria)(altitudine 38.14) (longitudine 13.31))
+
     (location (nome reggio) (regione calabria)(altitudine 38.10) (longitudine 15.66))
     (location (nome salerno) (regione calabria)(altitudine 40.41) (longitudine 14.46))
-    (location (nome bari) (regione puglia)(altitudine 41.07) (longitudine 16.53))
+
     (location (nome lecce) (regione puglia)(altitudine 40.21) (longitudine 18.11))
-    (location (nome brindisi) (regione puglia)(altitudine 40.39) (longitudine 17.56))
-    (location (nome roma) (regione lazio)(altitudine 41.54) (longitudine 12.31))
-    (location (nome latina) (regione lazio)(altitudine 41.28) (longitudine 12.51))
-    (location (nome frosinone) (regione lazio)(altitudine 41.38) (longitudine 13.22))
     (location (nome pisa) (regione toscana)(altitudine 43.43) (longitudine 10.24))
-    (location (nome siena) (regione toscana)(altitudine 43.19) (longitudine 11.18))
-    (location (nome lucca) (regione toscana)(altitudine 43.51) (longitudine 10.31))
-    (location (nome genova) (regione liguria)(altitudine 44.25) (longitudine 08.55))    
-    (location (nome savona) (regione liguria)(altitudine 44.19) (longitudine 08.28))    
-    (location (nome laspezia) (regione liguria)(altitudine 44.07) (longitudine 09.51))    
-    (location (nome milano) (regione lombardia)(altitudine 45.28) (longitudine 09.11))    
-    (location (nome pavia) (regione lombardia)(altitudine 45.11) (longitudine 09.11))    
-    (location (nome bergamo) (regione lombardia)(altitudine 45.42) (longitudine 09.40))    
-    (location (nome asti) (regione piemonte)(altitudine 44.53) (longitudine 08.11)) 
+
+    (location (nome milano) (regione lombardia)(altitudine 45.28) (longitudine 09.11)) 
+    (location (nome bergamo) (regione lombardia)(altitudine 45.42) (longitudine 09.40))  
+   
     (location (nome torino) (regione piemonte)(altitudine 45.04) (longitudine 07.42)) 
     (location (nome pinerolo) (regione piemonte)(altitudine 45.10) (longitudine 08.00))  
     
@@ -161,21 +147,57 @@
 
 )
 
-(defrule location-turism-list-random-creation
-    (location (nome ?n) (regione ?r))
-    =>
-    ;;(seed (round (time)))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo balneare)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo naturale)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo culturale)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo enogastronomico)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo sportivo)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo termale)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo montano)(score  (random 1 5))))
-    (assert(location-turistica (nome-location ?n)(tipo-turismo lacustre)(score  (random 1 5))))
+(deftemplate location-turistica
+    (slot nome-location (default ?NONE))
+    (slot tipo-turismo (default ?NONE))
+    (slot score(type INTEGER) (range 1 5))
+)
+
+(deffacts location-turism-list
+    (location-turistica (nome-location agrigento)(tipo-turismo balneare)(score  4))
+    (location-turistica (nome-location agrigento)(tipo-turismo culturale)(score  2))
+    (location-turistica (nome-location agrigento)(tipo-turismo enogastonomico)(score  3))
+
+    (location-turistica (nome-location palermo)(tipo-turismo balneare)(score  4))
+    (location-turistica (nome-location palermo)(tipo-turismo religioso)(score  4))
+    (location-turistica (nome-location palermo)(tipo-turismo sportivo)(score  4))
+
+    (location-turistica (nome-location reggio)(tipo-turismo montano)(score  3))
+    (location-turistica (nome-location reggio)(tipo-turismo enogastonomico)(score  5))
+    (location-turistica (nome-location reggio)(tipo-turismo lacustre)(score  5))
+
+    (location-turistica (nome-location salerno)(tipo-turismo termale)(score  4))
+    (location-turistica (nome-location salerno)(tipo-turismo naturale)(score  2))
+    (location-turistica (nome-location salerno)(tipo-turismo montano)(score  3))
+
+    (location-turistica (nome-location lecce)(tipo-turismo balneare)(score  5))
+    (location-turistica (nome-location lecce)(tipo-turismo enogastonomico)(score  3))
+    (location-turistica (nome-location lecce)(tipo-turismo lacustre)(score  2))
+    
+    (location-turistica (nome-location pisa)(tipo-turismo montano)(score  4))
+    (location-turistica (nome-location pisa)(tipo-turismo naturale)(score  2))
+    (location-turistica (nome-location pisa)(tipo-turismo termale)(score  4))
+
+    (location-turistica (nome-location milano)(tipo-turismo montano)(score  3))
+    (location-turistica (nome-location milano)(tipo-turismo sportivo)(score  4))
+    (location-turistica (nome-location milano)(tipo-turismo lacustre)(score  3))
+
+    (location-turistica (nome-location bergamo)(tipo-turismo montano)(score  4))
+    (location-turistica (nome-location bergamo)(tipo-turismo enogastronomico)(score  3))
+    (location-turistica (nome-location bergamo)(tipo-turismo sportivo)(score  4))
+    
+    (location-turistica (nome-location torino)(tipo-turismo montano)(score  3))
+    (location-turistica (nome-location torino)(tipo-turismo culturale)(score  3))
+    (location-turistica (nome-location torino)(tipo-turismo sportivo)(score  3))
+
+    (location-turistica (nome-location pinerolo)(tipo-turismo montano)(score  4))
+    (location-turistica (nome-location pinerolo)(tipo-turismo enogastonomico)(score  2))
+    (location-turistica (nome-location pinerolo)(tipo-turismo termale)(score  2))
+
 
 
 )
+
 
 ;;MODULE HOTEL
 
@@ -184,22 +206,34 @@
 (deftemplate HOTEL::hotel
     (slot nome (default ?NONE))
     (slot location (default ?NONE))
-    (slot stelle (type INTEGER) (range 1 4))
+    (slot stelle (type INTEGER) (range 1 5))
     (slot posti-liberi (type INTEGER) (range 0 ?VARIABLE))
     (slot capacità (type INTEGER) (range 1 ?VARIABLE))
 )
 
-
-(defrule lista-hotel-creazione-randomn
-    (location (nome ?n) (regione ?r))
-    =>
+(deffacts lista-hotel
     
-    (assert(hotel (nome (str-cat "morandi-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
-    (assert(hotel (nome (str-cat "empedocle-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
-    (assert(hotel (nome (str-cat "leonardo-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
-    (assert(hotel (nome (str-cat "sciascia-" ?n))(location ?n)(stelle (random 1 5))(posti-liberi (random 100 300))(capacità 300)))
-
+    (hotel (nome "hotel delle palme")(location palermo)(stelle 4)(posti-liberi 2)(capacità 300))
+    (hotel (nome "hotel sirena")(location palermo)(stelle 2)(posti-liberi 20)(capacità 150))
+    (hotel (nome "hotel empedocle")(location agrigento)(stelle 2)(posti-liberi 5)(capacità 300))
+    (hotel (nome "hotel dei templi")(location agrigento)(stelle 5)(posti-liberi 6)(capacità 100))
+    (hotel (nome "hotel piemonte")(location torino)(stelle 5)(posti-liberi 2)(capacità 40))
+    (hotel (nome "hotel san carlo")(location torino)(stelle 3)(posti-liberi 9)(capacità 40))
+    (hotel (nome "hotel del centro")(location milano)(stelle 5)(posti-liberi 50)(capacità 300))
+    (hotel (nome "la vecchia taverna")(location milano)(stelle 2)(posti-liberi 10)(capacità 30))
+    (hotel (nome "hotel reggio")(location reggio)(stelle 2)(posti-liberi 3)(capacità 30))
+    (hotel (nome "hotel mirafiori")(location salerno)(stelle 4)(posti-liberi 10)(capacità 30))
+    (hotel (nome "hotel marconi")(location bergamo)(stelle 2)(posti-liberi 0)(capacità 30))
+    (hotel (nome "la spezia")(location lecce)(stelle 4)(posti-liberi 100)(capacità 300))
+    (hotel (nome "hotel miramonti")(location lecce)(stelle 2)(posti-liberi 10)(capacità 30))
+    (hotel (nome "hotel della torre")(location pisa)(stelle 5)(posti-liberi 3)(capacità 30))
+    (hotel (nome "la lavandaia")(location milano)(stelle 2)(posti-liberi 4)(capacità 30))
+    (hotel (nome "hotel regina")(location pinerolo)(stelle 5)(posti-liberi 30)(capacità 30))
+    (hotel (nome "hotel carlo alberto")(location pinerolo)(stelle 2)(posti-liberi 10)(capacità 30))
+    
 )
+
+
 
 (deftemplate path
     (slot path-id (default-dynamic (gensym*)))
