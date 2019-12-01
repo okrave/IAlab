@@ -133,3 +133,14 @@
     =>
     (modify ?p (nome pippo))
 )
+
+(defrule provaexplore
+ 
+    
+    =>
+    ;;(bind ?element (nth$ 1 ?t))
+    (bind ?tipo (explode$ "hammer drill saw screw"))
+    (bind ?primo (nth$ 1 ?tipo))
+    (printout t ?tipo)
+    (printout t ?primo)
+)
