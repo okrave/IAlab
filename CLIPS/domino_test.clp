@@ -17,9 +17,6 @@
 
 )
 
-(deffacts preference-hote-location-iniziale   
-    (attributo (nome hotel-loc-preference)(valore hotel)(certezza 1.0)) 
-)
 
 (deftemplate iterazione
     (slot i (type INTEGER))
@@ -28,6 +25,7 @@
 (deffacts iterazione
     (iterazione (i 0))
 )
+
 
 
 ;;---------- COMBINE CERTAINTIES ------------
@@ -45,6 +43,9 @@
     (modify ?fact2 (certezza ?C3))
     
 )
+
+
+
 
 
 

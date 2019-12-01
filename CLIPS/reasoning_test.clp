@@ -1,6 +1,6 @@
-;;****************
-;;* MODULE MAIN  *
-;;****************
+
+;;------------------------------------------------ MODULE MAIN  
+
 
 (defrule MAIN::start
   (declare (salience 1000))
@@ -10,13 +10,13 @@
 )
 
 
-(deffacts MAIN::phase-sequence
-    (phase-sequence ASK-QUESTION REGOLE VALUTAZIONE PATH COSTRUZIONE-ITINERARIO VALUTAZIONE-ITINERARIO STAMPA-RISULTATI REGOLE-FINALI)
+(deffacts MAIN::sequenza-moduli
+    (sequenza-moduli ASK-QUESTION REGOLE VALUTAZIONE PATH COSTRUZIONE-ITINERARIO VALUTAZIONE-ITINERARIO STAMPA-RISULTATI REGOLE-FINALI)
 )
 
 (defrule MAIN::alterazione-sequenza
     (declare (salience -1000))
-    ?lista <- (phase-sequence ?prossimo-modulo $?altri-moduli)
+    ?lista <- (sequenza-moduli ?prossimo-modulo $?altri-moduli)
 =>
     (printout t "prossima fase: ")
     (printout t ?prossimo-modulo )
@@ -24,18 +24,11 @@
     (focus ?prossimo-modulo)
     (retract ?lista)
     ;; una volta runnato il primo focus runno il secondo e metto il primo in coda di modo che quando finisco tutti rirunno il primo
-    (assert (phase-sequence ?altri-moduli ?prossimo-modulo)) 
+    (assert (sequenza-moduli ?altri-moduli ?prossimo-modulo)) 
 )
 
-;;(defrule MAIN::start
-  ;;(declare (salience 10000))
-  ;;=>
-  ;;(set-fact-duplication TRUE)
-  ;;(focus LOCATION HOTEL ASK-QUESTION REGOLE VALUTAZIONE PATH COSTRUZIONE-ITINERARIO VALUTAZIONE-ITINERARIO REGOLE-FINALI))
+;;---------------------------------- MODULE ASK-QUESTION *
 
-;;***********************
-;;* MODULE ASK-QUESTION *
-;;***********************
 (defmodule ASK-QUESTION (import DOMANDE ?ALL) (import COMMON ?ALL))
 
 (deffunction ASK-QUESTION::ask-question (?tipo ?domanda ?valori-consentiti)
@@ -59,7 +52,7 @@
                 (printout t ?domanda)
                 (bind ?risposta (explode$ (readline)))
                 (if (eq (length$ ?risposta) 0) then 
-                    (bind ?risposta nil) (bind ?posti-liberi TRUE) (break))
+                    (bind ?risposta nil)(break))
                 (bind ?risposta (nth$ 1 ?risposta))
             )
             
@@ -107,21 +100,19 @@
         (if (eq ?risposta si) then 
             (printout t "Grazie per aver utilizzato la nostra applicazione. Buona vacanza!!" crlf crlf)
             (halt)
-            ;;(reset)
         )
 
         (if (and (eq ?risposta no) (> ?i 3)) then 
             (printout t "Mi dispiace, non abbiamo trovato soluzioni. " crlf crlf)
             (halt)
-            ;;(reset)
         )
         
     )
 
 
-;;*****************************
-;;* MODULE domanda-INFERENCE *
-;;*****************************
+
+;;----------------------------------------- MODULE REGOLE
+
 
 (defmodule REGOLE (import DOMANDE ?ALL)(import COMMON ?ALL))
 
@@ -131,23 +122,17 @@
         (assert(attributo (nome budget-viaggio-generico)(valore ?r)(certezza 1.0)))
    )
    
-   ;;--- Periodo viaggio
+   ;;--------- Periodo viaggio
     (defrule REGOLE:periodo-viaggio-estate
         (preferenze (tipo periodo-viaggio)(risposta estate))
         =>
         (assert(attributo (nome periodo-viaggio)(valore estate)(certezza 1.0)))
-        ;;(assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.7)))
-        ;;(assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.4)))
-
-
     )
 
     (defrule REGOLE:periodo-viaggio-inverno
         (preferenze (tipo periodo-viaggio)(risposta inverno))
         =>
         (assert(attributo (nome periodo-viaggio)(valore inverno)(certezza 1.0)))
-        ;;(assert (attributo (nome tipo-turismo)(valore balneare)(certezza 0.4)))
-        ;;(assert (attributo (nome tipo-turismo)(valore montano)(certezza 0.7)))
     )
 
     (defrule REGOLE:periodo-viaggio-indifferente
@@ -156,7 +141,7 @@
         (assert(attributo (nome periodo-viaggio)(valore indifferente)(certezza 1.0)))
     )
 
-   ;;-------ITINERARIO num-citta
+   ;;------- DURATA VIAGGIO
 
    (defrule REGOLE::durata-viaggio
         (preferenze (tipo durata-viaggio) (risposta ?s&:(and(> ?s 1)(< ?s 7))))
@@ -164,29 +149,8 @@
         (assert(attributo(nome durata-viaggio)(valore ?s)(certezza 1.0)))
    )
 
-   ;;-------  LOCATION ITINERARIO
-      (defrule REGOLE::numero-location-itinerario
-        (preferenze (tipo numero-location) (risposta ?s&:(and(> ?s 1)(< ?s 30))))
-         
-        =>
-        
-        (assert(attributo(nome numero-location)(valore ?s)(certezza 1.0)))
 
-
-   )
-
-    ;;-------- LOC-HOTEL preferenze
-    (defrule REGOLE::hotel-loc-preference
-        (preferenze (tipo hotel-loc-preference)(risposta ?s))
-        ?a <- (attributo(nome hotel-loc-preference))
-        =>
-        (retract ?a)
-        (assert(attributo (nome hotel-loc-preference)(valore ?s)(certezza 1.0)))
-
-        
-    )
     ;;-------ITINERARIO BUDGET
-
    (defrule REGOLE::budget-viaggio-generico
         (preferenze (tipo budget-viaggio-generico)(risposta si))
         =>
@@ -244,7 +208,16 @@
         (assert(attributo(nome viaggio-più-regioni)(valore ?a)(certezza 1.0))) 
     )
 
-;; -------MORE LOCATION
+
+
+    ;;---------  NUMERO LOCATION
+    (defrule REGOLE::numero-location
+        (preferenze (tipo numero-location) (risposta ?s&:(and(> ?s 1)(< ?s 30))))         
+        =>
+        
+        (assert(attributo(nome numero-location)(valore ?s)(certezza 1.0)))
+    )
+
     (defrule REGOLE::numero-location-generico
         (preferenze (tipo numero-location-generico)(risposta si))
         =>
@@ -255,14 +228,6 @@
         (preferenze (tipo numero-location-generico)(risposta no))
         =>
         (assert(attributo(nome numero-location-generico)(valore no)(certezza 1.0)))
-        (assert(attributo(nome itinerario-more-location)(valore 1)(certezza 1.0)))
-    )
-
-
-    (defrule REGOLE::itinerario-more-location
-        (preferenze (tipo itinerario-more-location)(risposta ?a&:(and(> ?a 2)(< ?a 11))))
-        =>
-        (assert(attributo(nome itinerario-more-location)(valore ?a)(certezza 1.0))) 
     )
 
 ;;-------------- MANGIARE
@@ -496,7 +461,6 @@
 
 
 (defrule eliminazione-path-simili
-    (declare (salience 100))
     ?p1 <- (path (path-id ?id1)(locations $?rs))
     ?p2 <- (path (path-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
     (test (subsetp ?rs ?rs1))
@@ -579,8 +543,9 @@
     (bind ?sum 0)
     (bind ?count 0)
     (do-for-all-facts ((?f attributo)) (eq ?f:nome (create$ tipo-turismo))
-    (bind ?sum (+ ?sum ?f:certezza))
-    (bind ?count (+ ?count 1)))
+        (bind ?sum (+ ?sum ?f:certezza))
+        (bind ?count (+ ?count 1))
+    )
     (assert (media-cf-location (valore (/ ?sum ?count))))
 )
 
@@ -606,6 +571,7 @@
 =>
     (assert (itinerario (itinerario-id ?id) (locations ?rs)(distanza-totale ?len)(durata ?len)))
 )
+
 
 ;; Inserisce al campo giorni il minimo periodo di giorni in una citta, avremo un vettore in cui ci saranno tanti 1 quanti sono le città
 (defrule inserimento-giorni-itinerario-basico
@@ -635,6 +601,27 @@
 
 (defmodule VALUTAZIONE-ITINERARIO (import PATH ?ALL)(import COMMON ?ALL) (import HOTEL ?ALL)(import ITINERARIO ?ALL)(import LOCATION ?ALL))
 
+
+(defrule pruning-numero-location-nell-itinerario
+    (declare (salience 10000))
+    (attributo (nome numero-location) (valore ?tl))
+    ?p <- (itinerario (locations $?rl))
+    ;; Se la differenza tra la durata del itinerario e la durata del path è maggiore di 1
+    (test (neq (length$ ?rl) ?tl))
+    =>
+    (retract ?p)
+)
+
+(defrule eliminazione-itinerari-simili
+    (declare (salience 10000))
+    ?p1 <- (itinerario (itinerario-id ?id1)(locations $?rs))
+    ?p2 <- (itinerario (itinerario-id ?id2&:(neq ?id2 ?id1))(locations $?rs1))
+    (test (eq $?rs $?rs1))
+  
+    =>
+    (printout t  "ASDASDASDASDASDASDASDASD" ?rs)
+    (retract ?p1)
+)
 
 (defrule modifica-itinerario-per-hotel-costi
     (declare (salience 1000))
@@ -856,6 +843,17 @@
 
 )
 
+(defrule eliminazione-viaggi
+    (declare (salience 0))
+    (attributo (nome il-viaggio) (valore ?id) (certezza ?cf))
+    (attributo (nome il-viaggio) (valore ?id) (certezza ?cfd))
+    (test (neq ?cf ?cfd))
+    =>
+    (printout t  "------------------------------------------------- EEEEsistono piu viaggi: " ?id  crlf)
+
+
+)
+
 
 
 (deffunction sum-integer-list ($?lista)
@@ -883,21 +881,30 @@
 
 
 
-;;---- DA FARE
-(defrule valutazione-itinerario-per-numero-location
-    
+;;---- Valutazione-itinerario
+(defrule valutazione-itinerario-per-numero-location    
     (attributo (nome numero-location)(valore ?v))
     (itinerario (itinerario-id ?id)(locations $?loc))
     (test (eq (length$ ?loc) ?v))
     =>
     (assert (attributo (nome il-viaggio) (valore ?id) (certezza 0.90)))
-
-
 )
 
 
 
 (defmodule STAMPA-RISULTATI (import COMMON ?ALL) (import ITINERARIO ?ALL))
+
+(defrule VALUTAZIONE-ITINERARIO::numero-itinerario    
+    (declare (salience 0))
+    (iterazione (i ?i))
+=>    
+    (bind ?count 0)
+    (do-for-all-facts ((?f itinerario)) TRUE
+        (bind ?count (+ ?count 1))
+    )
+    (printout t "---------------------------------------------------------- numero itinerari: " ?count crlf)
+)
+
 
 (defrule results-header
    (declare (salience 500))
@@ -915,7 +922,7 @@
     ?fact2 <- (attributo (nome il-viaggio)(valore ?tid)(certezza ?tcf))
     (not (attributo (nome il-viaggio)(valore ?tid2&~?tid)(certezza ?tcf2&:(> ?tcf2 ?tcf))))
     (test (> ?tcf ?*MIN-PRINT-CF*))
-    (itinerario (itinerario-id ?tid)(locations $?lc)(hotels $?hs)(giorni $?ds)(costi $?cs)(durata ?dr))
+    ?fact3 <- (itinerario (itinerario-id ?tid)(locations $?lc)(hotels $?hs)(giorni $?ds)(costi $?cs)(durata ?dr))
     (attributo (nome periodo-singolo-viaggio)(valore ?data))
  
 =>
@@ -927,17 +934,17 @@
     (printout t "Itinerario suggerio numero: " (+ ?p 1) " con certezza: " (/ (round (* ?tcf 1000)) 10) "%" crlf)
     (printout t "******************************************************************************************************" crlf)
     (printout t  crlf)
-    (printout t "*  - Location da visitare: " ?lc crlf)
+    (printout t "*  - Location da visitare: " ?lc ?tid crlf)
     (printout t "*  - Hotels: " (subseq$ ?hs 1 ?dr ) crlf)
     (printout t "*  - Partizionamente giorni: " ?ds crlf)
     (printout t "*  - Costi giornalieri: " (subseq$ ?cs 1 ?dr ) "  |  Costo Totale: " ?total-cost crlf) 
     (printout t "*  - Data viaggio: " ?data crlf)
     (printout t  crlf)
     (printout t "******************************************************************************************************" crlf)
-
-
     (printout t  crlf)
     (printout t  crlf)
+    (retract ?fact3)
+
 
 )
 
