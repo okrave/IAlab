@@ -1,6 +1,6 @@
 
 ;;------------------------------------------------ MODULE MAIN  
-
+(defmodule MAIN)
 
 (defrule MAIN::start
   (declare (salience 1000))
